@@ -6,7 +6,7 @@ import type { StepStatus } from "@/types/launch";
 const statusColor: Record<StepStatus, string> = {
   pending: "text-muted-foreground",
   running: "text-brand",
-  ok: "text-green-600 dark:text-green-400",
+  ok: "text-success",
   failed: "text-destructive",
   skipped: "text-muted-foreground",
 };
