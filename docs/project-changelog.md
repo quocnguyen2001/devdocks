@@ -26,13 +26,20 @@
   with an accessible error summary, and Undo on row removal. Native `confirm()`
   dialogs are replaced by in-app dialogs; motion is centralized and
   reduced-motion-safe throughout.
+- **Native macOS chrome** — the main window uses an overlay titlebar (hidden
+  title, native traffic lights) with NSVisualEffectView **vibrancy** on both the
+  main window and the tray popover (translucent surfaces over the native
+  material, with a readable solid fallback). Requires Developer-ID distribution
+  (uses `macOSPrivateApi`) — not Mac App Store eligible.
 
 ### Known limitations (this release)
 
 - **Dock-click reopen** isn't wired yet (Tauri v2 has no reopen event) — reopen
   from the tray **Open DevDock**.
-- Popover favorites are deferred (recent-first only); menu-bar **vibrancy**
-  (frosted popover) is deferred — the popover ships with a solid surface.
+- Popover favorites are deferred (recent-first only).
+- **Vibrancy** now ships (main window + popover). It uses Apple's private API,
+  so builds are **Developer-ID-only** (not Mac App Store eligible); needs a
+  visual pass on a real display across light/dark and older macOS versions.
 
 ## v0.1.0 — unreleased (Core v1)
 
