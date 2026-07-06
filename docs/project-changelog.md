@@ -2,6 +2,26 @@
 
 ## v0.2.0 — unreleased (Menu Bar + Brand Refresh)
 
+- **Linear-style redesign (UI-only)** — the whole app moves to a Linear.app-
+  inspired visual language: a cool-neutral OKLCH surface ladder (dark-primary,
+  full light mode with white cards on a gray canvas), hairline border-first
+  elevation (resting card shadows removed; soft shadows only on dialogs/popover/
+  toasts), larger container radii (cards/dialogs/popover 14px, panels/toasts
+  12px, controls 8px), a single indigo accent for CTA/selection/focus (deepened
+  so white button labels meet WCAG AA 4.5:1, incl. the destructive Delete),
+  brand-tinted text selection, a 200ms dialog fade+scale entrance, motion
+  timings unified to 150–250ms, one app-wide focus-ring recipe (added to the
+  popover footer buttons), and a brand left edge on the active nav item. The
+  popover now re-syncs its theme when shown (an in-app theme change no longer
+  leaves the tray popover stale) and its native vibrancy is clipped to the
+  panel's rounded corners. Icons stay Lucide defaults; scrollbars stay native
+  macOS overlay. No behavior, IPC, schema, or routing changes.
+  - *Documented exceptions:* the favorite star uses the amber semantic token
+    (`--warning`) — an intentional second hue so "favorite" reads distinct from
+    "selected"; muted secondary text over vibrancy can dip toward the AA
+    boundary depending on the desktop behind the window (accepted Linear-style
+    trade-off; solid-surface pairs measure ≥ 4.5:1).
+
 - **Menu bar extra** — a tray icon opens a lean webview **popover** with search +
   recent-first quick-launch (keyboard ↑/↓/⏎/esc, auto-hides on focus loss).
   Left-click toggles the popover; right-click shows Open / Quit.
