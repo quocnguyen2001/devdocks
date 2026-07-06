@@ -16,6 +16,9 @@ interface LaunchStore {
   runId: string | null;
   /** Most recently launched workspace, for best-effort before-close hooks. */
   lastLaunchedWorkspaceId: string | null;
+  /** Workspace whose launch is currently in flight, for per-card spinner state.
+   *  Cleared on both success and error (not in `finally`, which only unlistens). */
+  launchingWorkspaceId: string | null;
   /** stepIds in arrival order, for stable rendering. */
   order: string[];
   steps: Record<string, StepState>;
@@ -47,6 +50,7 @@ function applyProgress(state: LaunchStore, p: LaunchProgress) {
 export const useLaunchStore = create<LaunchStore>((set, get) => ({
   runId: null,
   lastLaunchedWorkspaceId: null,
+  launchingWorkspaceId: null,
   order: [],
   steps: {},
   summary: null,
@@ -57,6 +61,7 @@ export const useLaunchStore = create<LaunchStore>((set, get) => ({
     set({
       runId: null,
       lastLaunchedWorkspaceId: workspace.id,
+      launchingWorkspaceId: workspace.id,
       order: [],
       steps: {},
       summary: null,
@@ -69,13 +74,13 @@ export const useLaunchStore = create<LaunchStore>((set, get) => ({
     const unlistenDone = await ipc.onLaunchDone((summary) => set({ summary }));
     try {
       const summary = await ipc.launchWorkspace(workspace);
-      set({ summary, isLaunching: false });
+      set({ summary, isLaunching: false, launchingWorkspaceId: null });
       void notify(
         summary.partial ? "Workspace partially restored" : "Workspace launched",
         `${summary.ok} ok · ${summary.failed} failed · ${summary.skipped} skipped`,
       );
     } catch (e) {
-      set({ error: String(e), isLaunching: false });
+      set({ error: String(e), isLaunching: false, launchingWorkspaceId: null });
     } finally {
       unlistenProgress();
       unlistenDone();
