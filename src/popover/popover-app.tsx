@@ -11,6 +11,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Play, Plus, Power, Search } from "lucide-react";
 import { listWorkspaces } from "@/lib/workspace-ipc";
+import { filterByQuery, sortRecentFirst } from "@/popover/quick-launch";
 import { cn } from "@/lib/utils";
 import type { Workspace } from "@/types/workspace";
 
@@ -24,14 +25,7 @@ export function PopoverApp() {
 
   const refresh = useCallback(async () => {
     try {
-      const list = await listWorkspaces();
-      // Recent-first: most-recently-launched, then name.
-      list.sort((a, b) => {
-        const la = a.metadata.lastLaunched ?? "";
-        const lb = b.metadata.lastLaunched ?? "";
-        return la === lb ? a.name.localeCompare(b.name) : lb.localeCompare(la);
-      });
-      setWorkspaces(list);
+      setWorkspaces(sortRecentFirst(await listWorkspaces()));
     } catch {
       /* best-effort; leave the previous list */
     }
@@ -70,14 +64,10 @@ export function PopoverApp() {
     return () => void unlisten.then((un) => un());
   }, []);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return workspaces;
-    return workspaces.filter(
-      (w) =>
-        w.name.toLowerCase().includes(q) || w.path.toLowerCase().includes(q),
-    );
-  }, [workspaces, query]);
+  const visible = useMemo(
+    () => filterByQuery(workspaces, query),
+    [workspaces, query],
+  );
 
   useEffect(() => setSelected(0), [query]);
 
@@ -132,11 +122,18 @@ export function PopoverApp() {
             {workspaces.length === 0 ? "No workspaces yet." : "No matches."}
           </p>
         ) : (
-          <ul>
+          <ul role="listbox" aria-label="Workspaces">
             {visible.map((ws, i) => (
               <li key={ws.id}>
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={i === selected}
+                  ref={
+                    i === selected
+                      ? (el) => el?.scrollIntoView({ block: "nearest" })
+                      : undefined
+                  }
                   onMouseEnter={() => setSelected(i)}
                   onClick={() => void launch(ws)}
                   className={cn(
