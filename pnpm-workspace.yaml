@@ -1,5 +1,5 @@
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: false
 # pnpm 11+ reads build-script allow-list + run settings here (not the "pnpm"
 # field in package.json). esbuild's native binary ships via its platform package
 # (@esbuild/*), so allowing its build is optional; we disable the pre-run deps
