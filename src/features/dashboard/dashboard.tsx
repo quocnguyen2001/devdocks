@@ -86,7 +86,7 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

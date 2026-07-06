@@ -159,12 +159,12 @@ export function PopoverApp() {
                     )}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
+                    <span className="text-card-title block truncate">
                       {ws.name}
                     </span>
                     <span
                       className={cn(
-                        "block truncate text-xs",
+                        "text-mono block truncate",
                         i === selected
                           ? "text-brand-foreground/80"
                           : "text-muted-foreground",

@@ -4,11 +4,12 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
- * Top-level application chrome for the overlay-titlebar window (Phase 5).
+ * Top-level application chrome for the overlay-titlebar window.
  * Translucent surfaces sit over the native NSVisualEffectView vibrancy; the top
  * strips are drag regions that clear the native traffic lights. The theme
  * control lives in the sidebar footer (single home), and the page title is not
- * repeated — the sidebar nav is the single source of "where you are".
+ * repeated — the sidebar nav is the single source of "where you are". The footer
+ * also stamps the build-time app version.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const railHeight = { height: "var(--title-bar-height)" };
@@ -31,7 +32,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             Workspaces
           </span>
         </nav>
-        <div className="mt-auto flex items-center justify-end border-t border-border py-2">
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border px-2 py-2">
+          <span
+            className="text-mono tabular text-[10px] text-muted-foreground"
+            title="App version"
+          >
+            v{__APP_VERSION__}
+          </span>
           <ThemeToggle />
         </div>
       </aside>

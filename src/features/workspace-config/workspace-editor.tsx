@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Braces,
+  Code2,
+  Globe,
+  Info,
+  Plus,
+  Sparkles,
+  Terminal,
+  Trash2,
+  Webhook,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +22,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { ColorSwatchInput } from "@/components/color-swatch-input";
 import { FolderInput } from "@/components/folder-input";
-import { ToolChips } from "@/components/tool-chips";
+import { AppPicker } from "@/components/app-picker";
 import { useDetectedTools } from "@/hooks/use-detected-tools";
 import {
   AI_TOOL_OPTIONS,
@@ -114,6 +125,17 @@ export function WorkspaceEditor({
   const path = watch("path");
   const accentColor = watch("accentColor") ?? "";
 
+  // Collapsed-section summaries: let a folded section report its state at a
+  // glance (Linear-style) instead of forcing an expand to check.
+  const ideLabel = IDE_OPTIONS.find((o) => o.id === watch("ideApp"))?.label;
+  const hooksVal = watch("hooks");
+  const hookCount =
+    (hooksVal?.beforeLaunch.length ?? 0) +
+    (hooksVal?.afterLaunch.length ?? 0) +
+    (hooksVal?.beforeClose.length ?? 0);
+  const countLabel = (n: number, noun: string) =>
+    n === 0 ? "None" : `${n} ${noun}${n === 1 ? "" : "s"}`;
+
   const toggleTool = (name: "aiTools" | "applications", id: string) => {
     const cur = name === "aiTools" ? aiTools : applications;
     setValue(
@@ -160,285 +182,351 @@ export function WorkspaceEditor({
 
   return (
     <>
-      <form onSubmit={submit} className="mx-auto max-w-2xl space-y-4 p-6 pb-24">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">
-            {initial ? "Edit workspace" : "New workspace"}
-          </h2>
-          {isDirty && (
-            <span
-              className="h-2 w-2 rounded-full bg-brand"
-              title="Unsaved changes"
-              aria-label="Unsaved changes"
-            />
-          )}
-        </div>
-
-        <CollapsibleSection
-          title="General"
-          open={open.general}
-          onOpenChange={() => toggle("general")}
-          hasError={sectionHasError("general")}
-        >
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                {...register("name")}
-                placeholder="Laravel CRM"
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "name-error" : undefined}
-              />
-              {errors.name && (
-                <p id="name-error" className="text-xs text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
+      {/* Full-height flex column: pinned header + footer, one scroll region in
+          between — so the window frame no longer scrolls as a whole. */}
+      <form onSubmit={submit} className="flex h-full flex-col">
+        <header className="shrink-0 border-b border-border px-6 py-3.5">
+          <div className="mx-auto flex max-w-5xl items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={requestCancel}
+              aria-label="Back to workspaces"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold leading-tight">
+                {initial ? "Edit workspace" : "New workspace"}
+              </h2>
+              <p className="truncate text-xs text-muted-foreground">
+                {initial
+                  ? initial.path
+                  : "Set up a launch profile — editor, terminals, tools, and hooks."}
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Path</Label>
-              <FolderInput
-                value={path}
-                onChange={(v) => setValue("path", v, { shouldDirty: true })}
-                placeholder="/Users/me/Projects/app"
-              />
-              {errors.path && (
-                <p className="text-xs text-destructive">{errors.path.message}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" {...register("description")} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
-                <Input id="tags" {...register("tags")} placeholder="php, api" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="accent">Accent color</Label>
-                <ColorSwatchInput
-                  id="accent"
-                  value={accentColor}
-                  onChange={(v) =>
-                    setValue("accentColor", v, { shouldDirty: true })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="IDE"
-          open={open.ide}
-          onOpenChange={() => toggle("ide")}
-          hasError={sectionHasError("ide")}
-        >
-          <Select id="ide" {...register("ideApp")}>
-            <option value="">None</option>
-            {IDE_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-                {ideAvail(o.id)}
-              </option>
-            ))}
-          </Select>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Terminals"
-          open={open.terminals}
-          onOpenChange={() => toggle("terminals")}
-          hasError={sectionHasError("terminals")}
-        >
-          <div className="space-y-3">
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  terminals.append({
-                    id: crypto.randomUUID(),
-                    app: "iterm2",
-                    cwd: ".",
-                    command: "",
-                    delay: 0,
-                  })
-                }
+            {isDirty && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                title="Unsaved changes"
               >
-                <Plus className="h-4 w-4" /> Add
-              </Button>
-            </div>
-            {terminals.fields.map((f, i) => {
-              const isWarp = watch(`terminals.${i}.app`) === "warp";
-              return (
-                <div
-                  key={f.fieldId}
-                  className="space-y-2 rounded-md border border-border p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Select {...register(`terminals.${i}.app`)}>
-                        {TERMINAL_OPTIONS.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => terminals.remove(i)}
-                      aria-label="Remove terminal"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      {...register(`terminals.${i}.cwd`)}
-                      placeholder="cwd (e.g. . or backend)"
-                    />
-                    <Input
-                      className={cn("col-span-2", isWarp && "opacity-60")}
-                      {...register(`terminals.${i}.command`)}
-                      placeholder="command (e.g. npm run dev)"
-                      // readOnly (not disabled): RHF excludes disabled fields from
-                      // submission, which would make command `undefined` and fail
-                      // Zod validation, silently blocking save for Warp terminals.
-                      readOnly={isWarp}
-                    />
-                  </div>
-                  {isWarp && (
-                    <p className="text-xs text-muted-foreground">
-                      Warp is launch-only — it can't auto-run a cwd/command.
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-brand"
+                  aria-hidden
+                />
+                Unsaved
+              </span>
+            )}
+          </div>
+        </header>
+
+        {/* The single scroll region. `min-h-0` lets this flex child shrink below
+            its content so overflow scrolls here, not on the app shell. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-5xl space-y-3 px-6 py-6">
+            <CollapsibleSection
+              title="General"
+              icon={<Info className="h-4 w-4" />}
+              description="Name, path, description, tags, and accent color."
+              open={open.general}
+              onOpenChange={() => toggle("general")}
+              hasError={sectionHasError("general")}
+            >
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    {...register("name")}
+                    placeholder="Laravel CRM"
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "name-error" : undefined}
+                  />
+                  {errors.name && (
+                    <p id="name-error" className="text-xs text-destructive">
+                      {errors.name.message}
                     </p>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="AI tools & applications"
-          open={open.tools}
-          onOpenChange={() => toggle("tools")}
-          hasError={sectionHasError("tools")}
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>AI tools</Label>
-              <ToolChips
-                options={AI_TOOL_OPTIONS}
-                selected={aiTools}
-                onToggle={(id) => toggleTool("aiTools", id)}
-                availability={availability}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Additional applications</Label>
-              <ToolChips
-                options={APP_OPTIONS}
-                selected={applications}
-                onToggle={(id) => toggleTool("applications", id)}
-                availability={availability}
-              />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Browser URLs"
-          open={open.urls}
-          onOpenChange={() => toggle("urls")}
-          hasError={sectionHasError("urls")}
-        >
-          <div className="space-y-3">
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => urls.append({ url: "https://", browser: "" })}
-              >
-                <Plus className="h-4 w-4" /> Add
-              </Button>
-            </div>
-            {urls.fields.map((f, i) => (
-              <div key={f.fieldId} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Input
-                    {...register(`browserUrls.${i}.url`)}
-                    placeholder="https://example.com"
-                    aria-invalid={!!errors.browserUrls?.[i]?.url}
+                <div className="space-y-1.5">
+                  <Label>Path</Label>
+                  <FolderInput
+                    value={path}
+                    onChange={(v) => setValue("path", v, { shouldDirty: true })}
+                    placeholder="/Users/me/Projects/app"
                   />
+                  {errors.path && (
+                    <p className="text-xs text-destructive">
+                      {errors.path.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" {...register("description")} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tags">Tags (comma-separated)</Label>
+                    <Input
+                      id="tags"
+                      {...register("tags")}
+                      placeholder="php, api"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="accent">Accent color</Label>
+                    <ColorSwatchInput
+                      id="accent"
+                      value={accentColor}
+                      onChange={(v) =>
+                        setValue("accentColor", v, { shouldDirty: true })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="IDE"
+              icon={<Code2 className="h-4 w-4" />}
+              description="Editor to open the project in."
+              summary={ideLabel ?? "None"}
+              open={open.ide}
+              onOpenChange={() => toggle("ide")}
+              hasError={sectionHasError("ide")}
+            >
+              <Select id="ide" {...register("ideApp")}>
+                <option value="">None</option>
+                {IDE_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                    {ideAvail(o.id)}
+                  </option>
+                ))}
+              </Select>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Terminals"
+              icon={<Terminal className="h-4 w-4" />}
+              description="Terminal tabs to spawn on launch."
+              summary={countLabel(terminals.fields.length, "terminal")}
+              open={open.terminals}
+              onOpenChange={() => toggle("terminals")}
+              hasError={sectionHasError("terminals")}
+            >
+              <div className="space-y-3">
+                <div className="flex justify-end">
                   <Button
                     type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => urls.remove(i)}
-                    aria-label="Remove URL"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      terminals.append({
+                        id: crypto.randomUUID(),
+                        app: "iterm2",
+                        cwd: ".",
+                        command: "",
+                        delay: 0,
+                      })
+                    }
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Plus className="h-4 w-4" /> Add
                   </Button>
                 </div>
-                {errors.browserUrls?.[i]?.url && (
-                  <p className="text-xs text-destructive">
-                    {errors.browserUrls[i]?.url?.message}
-                  </p>
-                )}
+                {terminals.fields.map((f, i) => {
+                  const isWarp = watch(`terminals.${i}.app`) === "warp";
+                  return (
+                    <div
+                      key={f.fieldId}
+                      className="space-y-2 rounded-md border border-border p-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Select {...register(`terminals.${i}.app`)}>
+                            {TERMINAL_OPTIONS.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => terminals.remove(i)}
+                          aria-label="Remove terminal"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input
+                          {...register(`terminals.${i}.cwd`)}
+                          placeholder="cwd (e.g. . or backend)"
+                        />
+                        <Input
+                          className={cn("col-span-2", isWarp && "opacity-60")}
+                          {...register(`terminals.${i}.command`)}
+                          placeholder="command (e.g. npm run dev)"
+                          // readOnly (not disabled): RHF excludes disabled fields from
+                          // submission, which would make command `undefined` and fail
+                          // Zod validation, silently blocking save for Warp terminals.
+                          readOnly={isWarp}
+                        />
+                      </div>
+                      {isWarp && (
+                        <p className="text-xs text-muted-foreground">
+                          Warp is launch-only — it can't auto-run a cwd/command.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </CollapsibleSection>
+            </CollapsibleSection>
 
-        <CollapsibleSection
-          title="Environment variables"
-          open={open.env}
-          onOpenChange={() => toggle("env")}
-          hasError={sectionHasError("env")}
-        >
-          <EnvVarsSection
-            control={control}
-            register={register}
-            getValues={getValues}
-          />
-        </CollapsibleSection>
+            <CollapsibleSection
+              title="AI tools & applications"
+              icon={<Sparkles className="h-4 w-4" />}
+              description="AI assistants and extra apps to open."
+              summary={
+                aiTools.length + applications.length === 0
+                  ? "None"
+                  : `${aiTools.length + applications.length} selected`
+              }
+              open={open.tools}
+              onOpenChange={() => toggle("tools")}
+              hasError={sectionHasError("tools")}
+            >
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>AI tools</Label>
+                  <AppPicker
+                    options={AI_TOOL_OPTIONS}
+                    selected={aiTools}
+                    onToggle={(id) => toggleTool("aiTools", id)}
+                    availability={availability}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Additional applications</Label>
+                  <AppPicker
+                    options={APP_OPTIONS}
+                    selected={applications}
+                    onToggle={(id) => toggleTool("applications", id)}
+                    availability={availability}
+                  />
+                </div>
+              </div>
+            </CollapsibleSection>
 
-        <CollapsibleSection
-          title="Hooks"
-          open={open.hooks}
-          onOpenChange={() => toggle("hooks")}
-          hasError={sectionHasError("hooks")}
-        >
-          <HooksSection
-            control={control}
-            register={register}
-            getValues={getValues}
-          />
-        </CollapsibleSection>
+            <CollapsibleSection
+              title="Browser URLs"
+              icon={<Globe className="h-4 w-4" />}
+              description="Pages to open in your browser on launch."
+              summary={countLabel(urls.fields.length, "URL")}
+              open={open.urls}
+              onOpenChange={() => toggle("urls")}
+              hasError={sectionHasError("urls")}
+            >
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      urls.append({ url: "https://", browser: "" })
+                    }
+                  >
+                    <Plus className="h-4 w-4" /> Add
+                  </Button>
+                </div>
+                {urls.fields.map((f, i) => (
+                  <div key={f.fieldId} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        {...register(`browserUrls.${i}.url`)}
+                        placeholder="https://example.com"
+                        aria-invalid={!!errors.browserUrls?.[i]?.url}
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => urls.remove(i)}
+                        aria-label="Remove URL"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {errors.browserUrls?.[i]?.url && (
+                      <p className="text-xs text-destructive">
+                        {errors.browserUrls[i]?.url?.message}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
 
-        {/* Sticky action bar — Save/Cancel always reachable; announces errors. */}
-        <div className="sticky bottom-0 -mx-6 mt-6 flex items-center justify-between gap-3 border-t border-border bg-surface/90 px-6 py-3 backdrop-blur">
-          <p aria-live="polite" className="text-xs text-destructive">
-            {errorKeys.length > 0 &&
-              `${errorKeys.length} field${errorKeys.length > 1 ? "s" : ""} need attention.`}
-          </p>
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" onClick={requestCancel}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={isSubmitting}>
-              Save
-            </Button>
+            <CollapsibleSection
+              title="Environment variables"
+              icon={<Braces className="h-4 w-4" />}
+              description="Injected into launched terminals and commands."
+              summary={countLabel(watch("envVars")?.length ?? 0, "variable")}
+              open={open.env}
+              onOpenChange={() => toggle("env")}
+              hasError={sectionHasError("env")}
+            >
+              <EnvVarsSection
+                control={control}
+                register={register}
+                getValues={getValues}
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Hooks"
+              icon={<Webhook className="h-4 w-4" />}
+              description="Shell commands run at launch/close lifecycle points."
+              summary={countLabel(hookCount, "hook")}
+              open={open.hooks}
+              onOpenChange={() => toggle("hooks")}
+              hasError={sectionHasError("hooks")}
+            >
+              <HooksSection
+                control={control}
+                register={register}
+                getValues={getValues}
+              />
+            </CollapsibleSection>
           </div>
         </div>
+
+        {/* Pinned action bar — Save/Cancel always reachable without scrolling;
+            announces validation errors via aria-live. */}
+        <footer className="shrink-0 border-t border-border bg-surface/95 px-6 py-3 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+            <p aria-live="polite" className="text-xs text-destructive">
+              {errorKeys.length > 0 &&
+                `${errorKeys.length} field${errorKeys.length > 1 ? "s" : ""} need attention.`}
+            </p>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={requestCancel}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={isSubmitting}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </footer>
       </form>
 
       <ConfirmDialog

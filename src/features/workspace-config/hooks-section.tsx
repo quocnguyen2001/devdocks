@@ -13,7 +13,10 @@ import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 import type { WorkspaceForm } from "@/features/workspace-config/form-model";
 
-type HookPath = "hooks.beforeLaunch" | "hooks.afterLaunch" | "hooks.beforeClose";
+type HookPath =
+  | "hooks.beforeLaunch"
+  | "hooks.afterLaunch"
+  | "hooks.beforeClose";
 
 interface HookListProps {
   control: Control<WorkspaceForm>;
@@ -37,7 +40,12 @@ function HookList({
 
   const add = () => {
     setFocusIdx(fa.fields.length);
-    fa.append({ command: "", cwd: "", timeoutSecs: 30, failurePolicy: "continue" });
+    fa.append({
+      command: "",
+      cwd: "",
+      timeoutSecs: 30,
+      failurePolicy: "continue",
+    });
   };
 
   const removeWithUndo = (i: number) => {
@@ -50,59 +58,87 @@ function HookList({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label>{title}</Label>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Label>{title}</Label>
+          {note && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>
+          )}
+        </div>
         <Button type="button" size="sm" variant="outline" onClick={add}>
           <Plus className="h-4 w-4" /> Add
         </Button>
       </div>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
-      {fa.fields.length > 0 && (
-        <div className="grid grid-cols-[1fr_5rem_6rem_auto] gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          <span>Command</span>
-          <span>Timeout&nbsp;s</span>
-          <span>On&nbsp;fail</span>
-          <span className="sr-only">Actions</span>
+      {fa.fields.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border py-3 text-center text-xs text-muted-foreground">
+          No {title.toLowerCase()} hooks.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {fa.fields.map((f, i) => (
+            <div
+              key={f.id}
+              className="space-y-2.5 rounded-lg border border-border bg-surface p-3"
+            >
+              <div className="flex items-start gap-2">
+                <Input
+                  className="flex-1 font-mono"
+                  {...register(`${name}.${i}.command`)}
+                  placeholder="command (runs via sh -c)"
+                  aria-label="hook command"
+                  spellCheck={false}
+                  autoComplete="off"
+                  ref={(el) => {
+                    register(`${name}.${i}.command`).ref(el);
+                    if (el && i === focusIdx) {
+                      el.focus();
+                      setFocusIdx(null);
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => removeWithUndo(i)}
+                  aria-label="Remove hook"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="space-y-1">
+                  <span className="block text-[11px] font-medium text-muted-foreground">
+                    Timeout (s)
+                  </span>
+                  <Input
+                    type="number"
+                    min={1}
+                    className="h-8 w-24"
+                    aria-label="timeout seconds"
+                    {...register(`${name}.${i}.timeoutSecs`, {
+                      valueAsNumber: true,
+                    })}
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="block text-[11px] font-medium text-muted-foreground">
+                    On failure
+                  </span>
+                  <Select
+                    className="h-8 w-32"
+                    aria-label="failure policy"
+                    {...register(`${name}.${i}.failurePolicy`)}
+                  >
+                    <option value="continue">Continue</option>
+                    <option value="halt">Halt run</option>
+                  </Select>
+                </label>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-      {fa.fields.map((f, i) => (
-        <div
-          key={f.id}
-          className="grid grid-cols-[1fr_5rem_6rem_auto] items-center gap-2"
-        >
-          <Input
-            {...register(`${name}.${i}.command`)}
-            placeholder="command (runs via sh -c)"
-            aria-label="hook command"
-            ref={(el) => {
-              register(`${name}.${i}.command`).ref(el);
-              if (el && i === focusIdx) {
-                el.focus();
-                setFocusIdx(null);
-              }
-            }}
-          />
-          <Input
-            type="number"
-            min={1}
-            aria-label="timeout seconds"
-            {...register(`${name}.${i}.timeoutSecs`, { valueAsNumber: true })}
-          />
-          <Select aria-label="failure policy" {...register(`${name}.${i}.failurePolicy`)}>
-            <option value="continue">continue</option>
-            <option value="halt">halt</option>
-          </Select>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() => removeWithUndo(i)}
-            aria-label="Remove hook"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ))}
     </div>
   );
 }
@@ -113,7 +149,11 @@ interface HooksSectionProps {
   getValues: UseFormGetValues<WorkspaceForm>;
 }
 
-export function HooksSection({ control, register, getValues }: HooksSectionProps) {
+export function HooksSection({
+  control,
+  register,
+  getValues,
+}: HooksSectionProps) {
   return (
     <section className="space-y-4">
       <p className="text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 [package]
 name = "devdocks"
-version = "0.1.0"
+version = "0.2.0"
 description = "Restore your entire developer workspace with one click."
 authors = ["DevDock"]
 edition = "2021"
