@@ -13,6 +13,7 @@ Local-first: every workspace is a plain JSON file on your machine. No account, n
 - Wait-for-dependency (e.g. start Docker Desktop, then poll `docker info`)
 - Before/after-launch and before-close hooks, plus workspace environment variables
 - Live launch progress with partial-restore + per-step retry
+- **Menu bar extra** — a tray icon opens a quick-launch popover (search + recent, keyboard-driven); closing the window hides the app to the menu bar (⌘Q to quit)
 - Light / dark / system theming; keyboard-friendly
 
 ## Tech stack

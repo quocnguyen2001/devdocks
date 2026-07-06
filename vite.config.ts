@@ -16,6 +16,16 @@ export default defineConfig(async () => ({
     },
   },
 
+  // Two entries: the full app (index.html) and the lean tray popover (popover.html).
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        popover: resolve(__dirname, "popover.html"),
+      },
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

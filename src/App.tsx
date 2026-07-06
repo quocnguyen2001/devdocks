@@ -34,7 +34,6 @@ function App() {
   // window close (not guaranteed on force-quit/crash/logout — review M1).
   const lastLaunchedId = useLaunchStore((s) => s.lastLaunchedWorkspaceId);
   const lastRef = useRef<string | null>(null);
-  const closingRef = useRef(false);
   useEffect(() => {
     lastRef.current = lastLaunchedId;
   }, [lastLaunchedId]);
@@ -43,16 +42,20 @@ function App() {
     try {
       const win = getCurrentWindow();
       const unlisten = win.onCloseRequested(async (event) => {
-        const id = lastRef.current;
-        if (closingRef.current || !id) return; // nothing to run → close normally
+        // Close-to-menu-bar: always intercept and HIDE (never destroy) so the app
+        // keeps running in the menu bar. ⌘Q and the tray "Quit" do the real exit.
+        // Single close handler here — no competing Rust CloseRequested handler
+        // (avoids the destroy-vs-hide collision flagged in red-team).
         event.preventDefault();
-        closingRef.current = true;
-        try {
-          await runBeforeCloseHooks(id);
-        } catch {
-          /* best-effort */
+        const id = lastRef.current;
+        if (id) {
+          try {
+            await runBeforeCloseHooks(id);
+          } catch {
+            /* best-effort */
+          }
         }
-        await win.destroy();
+        await win.hide();
       });
       cleanup = () => void unlisten.then((f) => f());
     } catch {

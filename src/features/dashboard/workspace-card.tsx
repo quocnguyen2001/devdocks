@@ -30,7 +30,7 @@ export function WorkspaceCard({
   const reduced = useReducedMotion();
   return (
     <motion.div
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-4"
+      className="group flex flex-col gap-3 rounded-xl border border-border bg-elevated/70 p-4 transition-colors hover:border-border-strong"
       style={
         accent ? { borderLeftColor: accent, borderLeftWidth: "3px" } : undefined
       }

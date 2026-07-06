@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,9 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
   useEffect(() => {
     void fetch();
     void hydrate();
+    // Refetch when any window (incl. the popover) changes/launches a workspace.
+    const changed = listen("workspaces:changed", () => void fetch());
+    return () => void changed.then((un) => un());
   }, [fetch, hydrate]);
 
   useKeyboardShortcuts({ onSearch: () => searchRef.current?.focus() });
@@ -186,7 +190,7 @@ function FilterChip({
       className={cn(
         "rounded-full border px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-primary bg-primary text-primary-foreground"
+          ? "border-brand bg-brand text-brand-foreground"
           : "border-input bg-background hover:bg-accent",
       )}
     >

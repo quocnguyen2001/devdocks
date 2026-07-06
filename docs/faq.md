@@ -1,5 +1,13 @@
 # DevDock FAQ
 
+## I closed the window but the app is still running
+
+DevDock is a **menu-bar app**: closing the window **hides it to the menu bar** so
+quick actions stay available in the background. **Left-click** the tray icon to
+open the quick-launch popover; choose **Open DevDock** (or **right-click** the
+tray → Open DevDock) to bring the window back; use **⌘Q** or the tray **Quit** to
+exit completely. (Clicking the Dock icon to reopen isn't wired yet — use the tray.)
+
 ## Why did macOS ask to control Terminal / iTerm?
 
 DevDock automates your terminal via AppleScript to open a window, `cd` to your

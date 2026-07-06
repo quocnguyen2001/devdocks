@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Boxes, LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
@@ -8,14 +9,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card/40 p-4">
+    <div className="flex h-full w-full overflow-hidden bg-surface text-foreground">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-elevated/30 p-4">
         <div className="flex items-center gap-2 px-2 py-1">
-          <Boxes className="h-5 w-5 text-primary" />
+          <Logo size={20} />
           <span className="text-sm font-semibold tracking-tight">DevDock</span>
         </div>
         <nav className="mt-6 flex flex-col gap-1 text-sm">
-          <span className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-accent-foreground">
+          <span className="flex items-center gap-2 rounded-md bg-brand-muted px-3 py-2 font-medium text-foreground">
             <LayoutGrid className="h-4 w-4" />
             Workspaces
           </span>

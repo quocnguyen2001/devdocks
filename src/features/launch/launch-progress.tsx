@@ -5,7 +5,7 @@ import type { StepStatus } from "@/types/launch";
 
 const statusColor: Record<StepStatus, string> = {
   pending: "text-muted-foreground",
-  running: "text-foreground",
+  running: "text-brand",
   ok: "text-green-600 dark:text-green-400",
   failed: "text-destructive",
   skipped: "text-muted-foreground",
@@ -18,7 +18,7 @@ export function LaunchProgress() {
   if (order.length === 0) return null;
 
   return (
-    <div className="rounded-md border border-border p-3">
+    <div className="rounded-xl border border-border bg-elevated/60 p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Launch progress
       </p>
