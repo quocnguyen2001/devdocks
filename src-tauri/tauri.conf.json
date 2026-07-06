@@ -20,6 +20,20 @@
         "minHeight": 600,
         "resizable": true,
         "focus": true
+      },
+      {
+        "label": "popover",
+        "url": "popover.html",
+        "title": "DevDock Quick Actions",
+        "width": 380,
+        "height": 480,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "focus": false
       }
     ],
     "security": {

@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,9 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
   useEffect(() => {
     void fetch();
     void hydrate();
+    // Refetch when any window (incl. the popover) changes/launches a workspace.
+    const changed = listen("workspaces:changed", () => void fetch());
+    return () => void changed.then((un) => un());
   }, [fetch, hydrate]);
 
   useKeyboardShortcuts({ onSearch: () => searchRef.current?.focus() });

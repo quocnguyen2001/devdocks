@@ -14,7 +14,7 @@ mod storage;
 use tauri::image::Image;
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use commands::launch::{detect_tools, launch_workspace, retry_step, run_before_close_hooks};
 use commands::workspace::{
@@ -44,6 +44,36 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+/// Toggle the tray popover: hide if visible, else position it under the tray icon
+/// and show + focus it (Phase 4).
+fn toggle_popover(app: &AppHandle) {
+    use tauri_plugin_positioner::{Position, WindowExt};
+    let Some(popover) = app.get_webview_window("popover") else {
+        return;
+    };
+    if popover.is_visible().unwrap_or(false) {
+        let _ = popover.hide();
+    } else {
+        let _ = popover.move_window(Position::TrayCenter);
+        let _ = popover.show();
+        let _ = popover.set_focus();
+        // Tell the popover to refresh its data on show.
+        let _ = app.emit("popover:shown", ());
+    }
+}
+
+/// Reveal the main window (popover footer "Open DevDock").
+#[tauri::command]
+fn open_main_window(app: AppHandle) {
+    show_main(&app);
+}
+
+/// Quit the whole app (popover footer "Quit").
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
 /// Build the menu-bar tray: an embedded monochrome template icon, a right-click
 /// Open/Quit menu, and a left-click that reveals the main window. (Phase 4 swaps
 /// the left-click to toggle the popover.)
@@ -69,13 +99,15 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
+            // Positioner needs the tray rect to place the popover under the icon.
+            tauri_plugin_positioner::on_tray_event(tray.app_handle(), &event);
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
             } = event
             {
-                show_main(tray.app_handle());
+                toggle_popover(tray.app_handle());
             }
         })
         .build(app)?;
@@ -92,6 +124,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             show_main(app);
         }))
+        .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
@@ -117,6 +150,8 @@ pub fn run() {
         launch_workspace,
         retry_step,
         run_before_close_hooks,
+        open_main_window,
+        quit_app,
         commands::workspace::dev_seed_workspace
     ]);
     #[cfg(not(debug_assertions))]
@@ -129,7 +164,9 @@ pub fn run() {
         detect_tools,
         launch_workspace,
         retry_step,
-        run_before_close_hooks
+        run_before_close_hooks,
+        open_main_window,
+        quit_app
     ]);
 
     builder

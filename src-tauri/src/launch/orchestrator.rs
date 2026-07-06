@@ -336,4 +336,6 @@ pub fn record_launch(app: &AppHandle, workspace_id: &str) {
     if let Err(e) = repo.record_launched(workspace_id, chrono::Utc::now().to_rfc3339()) {
         tracing::warn!(error = %e, "failed to record last_launched");
     }
+    // Recents changed → let both windows (incl. the popover) refresh.
+    let _ = app.emit("workspaces:changed", ());
 }

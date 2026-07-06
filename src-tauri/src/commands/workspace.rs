@@ -1,10 +1,16 @@
 //! Tauri command handlers for workspace CRUD. Thin wrappers over `WorkspaceRepo`
 //! that resolve the app config dir and map errors to strings for the frontend.
 
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::models::workspace::Workspace;
 use crate::storage::workspace_repo::WorkspaceRepo;
+
+/// Notify all windows (main + popover) that the workspace set changed so each
+/// re-fetches. Kept minimal (no payload) — listeners just refetch.
+fn notify_changed(app: &AppHandle) {
+    let _ = app.emit("workspaces:changed", ());
+}
 
 fn repo(app: &AppHandle) -> Result<WorkspaceRepo, String> {
     let dir = app
@@ -31,17 +37,22 @@ pub fn save_workspace(app: AppHandle, mut workspace: Workspace) -> Result<Worksp
     repo(&app)?
         .save(&mut workspace)
         .map_err(|e| e.to_string())?;
+    notify_changed(&app);
     Ok(workspace)
 }
 
 #[tauri::command]
 pub fn delete_workspace(app: AppHandle, id: String) -> Result<(), String> {
-    repo(&app)?.delete(&id).map_err(|e| e.to_string())
+    repo(&app)?.delete(&id).map_err(|e| e.to_string())?;
+    notify_changed(&app);
+    Ok(())
 }
 
 #[tauri::command]
 pub fn duplicate_workspace(app: AppHandle, id: String) -> Result<Workspace, String> {
-    repo(&app)?.duplicate(&id).map_err(|e| e.to_string())
+    let ws = repo(&app)?.duplicate(&id).map_err(|e| e.to_string())?;
+    notify_changed(&app);
+    Ok(ws)
 }
 
 /// Dev-only: seed a rich workspace exercising the full launch matrix (Phase 3):
