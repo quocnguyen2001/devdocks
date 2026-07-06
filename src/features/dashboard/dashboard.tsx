@@ -186,7 +186,7 @@ function FilterChip({
       className={cn(
         "rounded-full border px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-primary bg-primary text-primary-foreground"
+          ? "border-brand bg-brand text-brand-foreground"
           : "border-input bg-background hover:bg-accent",
       )}
     >
