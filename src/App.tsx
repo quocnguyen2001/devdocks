@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { AppShell } from "@/components/app-shell";
+import { Toaster } from "@/components/ui/toast";
 import { Dashboard } from "@/features/dashboard/dashboard";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { runBeforeCloseHooks } from "@/lib/launch-ipc";
@@ -93,6 +94,7 @@ function App() {
           />
         )}
       </Suspense>
+      <Toaster />
     </AppShell>
   );
 }
