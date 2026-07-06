@@ -246,7 +246,7 @@ function FilterChip({
         "rounded-full border px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-brand bg-brand text-brand-foreground"
-          : "border-input bg-background hover:bg-accent",
+          : "border-input bg-transparent hover:bg-accent",
       )}
     >
       {children}

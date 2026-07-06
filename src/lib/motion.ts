@@ -1,10 +1,10 @@
 import type { Transition, Variants } from "motion/react";
 
-// Central motion rhythm — mirrors the CSS motion tokens in index.css so every
-// animation shares one duration/easing/spring language (Phase 6). Callers pass
-// `useReducedMotion()` so motion collapses to instant when the user opts out.
+// Central motion rhythm — the single timing source for all JS animation (CSS
+// transitions use Tailwind's default 150ms). Timings sit in the 150–250ms band.
+// Callers pass `useReducedMotion()` so motion collapses when the user opts out.
 
-export const DURATION = { fast: 0.1, base: 0.18, slow: 0.26 } as const;
+export const DURATION = { fast: 0.15, base: 0.2, slow: 0.24 } as const;
 export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 export const SPRING: Transition = { type: "spring", stiffness: 200, damping: 15 };
 

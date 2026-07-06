@@ -80,12 +80,12 @@ export function WorkspaceCard({
 
   return (
     <motion.div
-      className="group flex flex-col gap-3 rounded-xl border border-border bg-elevated/70 p-4 shadow-xs transition-[box-shadow,border-color] hover:border-border-strong hover:shadow-md"
+      className="group flex flex-col gap-3 rounded-xl border border-border bg-elevated/70 p-4 transition-[border-color] hover:border-border-strong"
       style={
         accent ? { borderLeftColor: accent, borderLeftWidth: "3px" } : undefined
       }
       {...fadeInUp(reduced)}
-      whileHover={reduced ? undefined : { y: -2 }}
+      whileHover={reduced ? undefined : { y: -1 }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -103,7 +103,7 @@ export function WorkspaceCard({
           <Star
             className={cn(
               "h-4 w-4",
-              isFavorite && "fill-yellow-400 text-yellow-400",
+              isFavorite && "fill-warning text-warning",
             )}
           />
         </motion.button>

@@ -49,9 +49,11 @@ export function CollapsibleSection({
             </>
           )}
         </span>
+        {/* Always rotate so open/closed stays visible under reduced motion —
+            the transition just becomes instant instead of animated. */}
         <motion.span
-          animate={reduced ? undefined : { rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: reduced ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-muted-foreground"
         >
           <ChevronDown className="h-4 w-4" />

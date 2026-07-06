@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const overlayClass = "fixed inset-0 z-50 bg-black/50";
 
 const contentClass =
-  "fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-popover p-5 text-popover-foreground shadow-popover focus:outline-none";
+  "fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-popover p-5 text-popover-foreground shadow-popover focus:outline-none data-[state=open]:animate-[dialogIn_200ms_ease-out]";
 
 export interface ConfirmDialogProps {
   open: boolean;

@@ -7,7 +7,7 @@
 :root {
   --radius: 0.625rem;
 
-  --background: oklch(1 0 0);
+  --background: oklch(0.975 0.002 265);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -15,12 +15,12 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.96 0.003 265);
+  --secondary-foreground: oklch(0.22 0.01 265);
+  --muted: oklch(0.965 0.003 265);
+  --muted-foreground: oklch(0.52 0.01 265);
+  --accent: oklch(0.955 0.004 265);
+  --accent-foreground: oklch(0.22 0.01 265);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
@@ -29,12 +29,16 @@
 
   /* Brand (Indigo) — NEW token. Do NOT repoint the neutral `--accent` (used for
      hover/selected surfaces everywhere). Brand rides on `--brand`/`bg-brand`. */
-  --brand: oklch(0.55 0.21 274);
+  --brand: oklch(0.55 0.17 274);
   --brand-foreground: oklch(0.99 0 0);
   --brand-muted: oklch(0.95 0.03 274);
 
-  /* Elevation surfaces: app canvas vs lifted cards (used in the Phase 2 refresh). */
-  --surface: oklch(0.985 0 0);
+  /* Text-selection tint (::selection rule below). */
+  --selection: oklch(0.55 0.17 274 / 22%);
+  --selection-foreground: oklch(0.145 0 0);
+
+  /* Elevation surfaces: slightly-gray canvas under white lifted cards. */
+  --surface: oklch(0.985 0.002 265);
   --elevated: oklch(1 0 0);
 
   --ring: var(--brand);
@@ -48,49 +52,54 @@
   --info: oklch(0.58 0.16 250);
   --info-foreground: oklch(0.99 0 0);
 
-  /* Elevation scale — macOS-flavored: low-spread, soft, cool-neutral. */
+  /* Elevation scale — shadows are for true overlays only (dialogs, popover,
+     toasts); resting surfaces rely on borders + the surface ladder. sm/md are
+     retained for the Tailwind map; xs is used only by the sort-control thumb. */
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.05);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.05);
   --shadow-md: 0 2px 6px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.06);
-  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.12), 0 2px 6px oklch(0 0 0 / 0.08);
-  --shadow-popover: 0 12px 32px oklch(0 0 0 / 0.18), 0 2px 8px oklch(0 0 0 / 0.1);
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.1);
+  --shadow-popover: 0 16px 40px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08);
 
-  /* Motion tokens (Phase 6 `motion` variants util consumes these).
-     Spring reference for JS motion: stiffness 200 / damping 15. */
-  --duration-fast: 100ms;
-  --duration-base: 180ms;
-  --duration-slow: 260ms;
+  /* Easing tokens (mapped in @theme, used by ease-* utilities). Motion timing
+     lives in src/lib/motion.ts — the single timing source. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.13 0.004 265);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.185 0.005 265);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.205 0.006 265);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: oklch(0.24 0.006 265);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --muted: oklch(0.24 0.006 265);
+  --muted-foreground: oklch(0.68 0.01 265);
+  --accent: oklch(0.24 0.006 265);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  /* Deep red fill so the white label clears 4.5:1 on destructive buttons. */
+  --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --border-strong: oklch(1 0 0 / 16%);
   --input: oklch(1 0 0 / 15%);
 
-  --brand: oklch(0.66 0.19 274);
+  /* Indigo deep enough that the white CTA label clears 4.5:1. */
+  --brand: oklch(0.56 0.17 274);
   --brand-foreground: oklch(0.99 0 0);
-  --brand-muted: oklch(0.32 0.09 274);
+  --brand-muted: oklch(0.3 0.07 274);
 
-  --surface: oklch(0.145 0 0);
-  --elevated: oklch(0.205 0 0);
+  /* Text-selection tint (::selection rule below). */
+  --selection: oklch(0.62 0.16 274 / 35%);
+  --selection-foreground: oklch(0.99 0 0);
+
+  --surface: oklch(0.155 0.004 265);
+  --elevated: oklch(0.185 0.005 265);
 
   --ring: var(--brand);
 
@@ -102,12 +111,12 @@
   --info: oklch(0.72 0.15 250);
   --info-foreground: oklch(0.15 0 0);
 
-  /* Elevation scale (dark) — stronger blacks, subtler spread. */
+  /* Elevation scale (dark) — overlays only; stronger blacks, subtler spread. */
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.5), 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-md: 0 2px 6px oklch(0 0 0 / 0.55), 0 1px 2px oklch(0 0 0 / 0.4);
-  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.45);
-  --shadow-popover: 0 12px 32px oklch(0 0 0 / 0.7), 0 2px 8px oklch(0 0 0 / 0.5);
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.55);
+  --shadow-popover: 0 16px 40px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.4);
 }
 
 /* Map CSS variables to Tailwind v4 theme tokens so utilities like
@@ -158,12 +167,12 @@
   --ease-out: var(--ease-out);
   --ease-in: var(--ease-in);
 
-  /* Radius scale. sm/md/lg unchanged (no regression this phase); xl is new for
-     modals/panels (macOS 26 baseline, per Decision #7). */
+  /* Radius scale: compact controls 6/8px (sm/md), panels 12px (lg), cards and
+     overlays 14px (xl). */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: 12px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
 }
 
 @layer base {
@@ -190,6 +199,11 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;
   }
+  /* Brand-tinted text selection instead of the default blue. */
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-foreground);
+  }
 }
 
 /* Type scale reference (documented; applied via Tailwind text-* utilities):
@@ -214,8 +228,23 @@
   -webkit-app-region: no-drag;
 }
 
+/* Dialog entrance (ui/dialog.tsx, via animate-[dialogIn_…]). Scale-only: the
+   centering -translate-x/y-1/2 utilities emit the CSS `translate` property,
+   which composes independently of `transform` — repeating the translate here
+   would double the offset and shift the dialog during the animation. */
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Reduced-motion baseline: neutralize CSS transitions/animations. JS `motion`
-   animations are gated separately via the useReducedMotion hook (Phase 6). */
+   animations are gated separately via the useReducedMotion hook. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
