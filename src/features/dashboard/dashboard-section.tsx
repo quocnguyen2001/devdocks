@@ -13,10 +13,12 @@ export function DashboardSection({
 }) {
   if (count === 0) return null;
   return (
-    <section className="space-y-2">
-      <h2 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <section className="space-y-3">
+      <h2 className="flex items-baseline gap-2 text-section">
         {title}
-        <span className="tabular text-muted-foreground/70">{count}</span>
+        <span className="tabular text-sm font-normal text-muted-foreground/70">
+          {count}
+        </span>
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
     </section>

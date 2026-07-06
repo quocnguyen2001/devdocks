@@ -1,14 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+// Single source of truth for the app version: read package.json at build time and
+// inline it as a global constant (no runtime IPC/fetch). Read via node:fs — a JSON
+// import would need resolveJsonModule, which tsconfig.node.json does not enable.
+const appVersion = JSON.parse(
+  readFileSync(resolve(__dirname, "package.json"), "utf-8"),
+).version as string;
+
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
+
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
 
   resolve: {
     alias: {

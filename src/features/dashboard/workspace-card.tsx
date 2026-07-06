@@ -89,8 +89,8 @@ export function WorkspaceCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{ws.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{ws.path}</p>
+          <p className="text-card-title truncate">{ws.name}</p>
+          <p className="text-mono truncate text-muted-foreground">{ws.path}</p>
         </div>
         <motion.button
           type="button"

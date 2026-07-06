@@ -2,6 +2,35 @@
 
 ## v0.2.0 — unreleased (Menu Bar + Brand Refresh)
 
+- **UI polish pass (UI-only)** — a round of targeted refinements on top of the
+  Linear redesign, addressing direct user feedback:
+  - **Applied type scale** — the documented SF-Pro scale is now real utility
+    classes (display / section / card-title / body / label / mono) with tuned
+    tracking and line-heights; the native system stack is kept (no bundled font).
+    Dashboard section headers, workspace-card titles/paths, and popover rows adopt
+    it; paths render in a tabular mono for alignment.
+  - **Smooth collapsible sections** — expand/collapse now animates height + fade
+    (~200ms, reduced-motion → instant) instead of snapping open; the section
+    overflow was moved onto the animating panel so it no longer clips overlays.
+  - **Full-width workspace editor** — the create/edit screen fills the window
+    (`max-w-5xl`), header, scroll body, and action bar sharing one container.
+  - **Accent color picker fixed** — the picker now renders through a portal,
+    anchored below the field, staying fully visible even when the form scrolls
+    (previously clipped by the section/scroll container); closes on
+    outside-click / Escape / scroll / resize.
+  - **App picker with logos** — AI-tools and applications are chosen from a tile
+    grid showing per-app logos (bundled brand SVGs for common apps: VS Code, Zed,
+    iTerm2, Terminal, Docker, Postman, Chrome, Safari, Arc, TablePlus, DBeaver,
+    Redis Insight, Claude) with a colored-monogram fallback for the rest;
+    multi-select, keyboard-accessible, availability-annotated. Selection data is
+    unchanged.
+  - **Even popover corners** — the tray popover's square native window shadow is
+    disabled (`shadow: false`) so the rounded panel reads with even corners over
+    the vibrancy material; the panel keeps its own soft shadow.
+  - **In-app version badge** — the app version is defined once (from
+    `package.json`, injected at build time) and stamped in the sidebar footer;
+    `package.json`, `tauri.conf.json`, and `Cargo.toml` bumped to `0.2.0`.
+
 - **Linear-style redesign (UI-only)** — the whole app moves to a Linear.app-
   inspired visual language: a cool-neutral OKLCH surface ladder (dark-primary,
   full light mode with white cards on a gray canvas), hairline border-first

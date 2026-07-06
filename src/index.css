@@ -206,15 +206,38 @@
   }
 }
 
-/* Type scale reference (documented; applied via Tailwind text-* utilities):
-   title 28/600 · section 17/600 · body 13–14/400 · label 11–12/500 · mono 12/400.
-   Use the `tabular` utility for column-aligned digits (paths, counts, timeouts). */
+/* Applied type scale. SF Pro wants slight negative tracking at display sizes and
+   positive tracking at label sizes; body/labels stay legible on macOS antialiasing
+   (already set on `body`). Use `tabular` for column-aligned digits. */
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+@utility text-display {
+  @apply text-[28px] font-semibold leading-[1.15] tracking-[-0.02em];
+}
+@utility text-section {
+  @apply text-[17px] font-semibold leading-[1.35] tracking-[-0.005em];
+}
+@utility text-card-title {
+  @apply text-[14px] font-semibold leading-[1.4] tracking-[-0.003em];
+}
+@utility text-body {
+  @apply text-[13px] font-normal leading-[1.5] tracking-[0.003em];
+}
+@utility text-body-lg {
+  @apply text-[14px] font-normal leading-[1.5] tracking-[0.003em];
+}
+@utility text-label {
+  @apply text-[11px] font-medium uppercase leading-[1.45] tracking-[0.04em];
+}
+/* No --font-mono token; `font-mono` uses the default monospace stack, which is
+   fine for the version badge and tabular digits. */
+@utility text-mono {
+  @apply font-mono text-[12px] font-normal leading-[1.5] tracking-[0.01em];
+}
 
-/* Native macOS window chrome (Phase 5): the overlay titlebar keeps traffic
-   lights top-left; reserve this height so content doesn't underlap them. */
+/* Native macOS window chrome: the overlay titlebar keeps traffic lights
+   top-left; reserve this height so content doesn't underlap them. */
 :root {
   --title-bar-height: 28px;
 }
