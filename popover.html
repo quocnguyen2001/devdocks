@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevDock Quick Actions</title>
+    <script>
+      // Pre-paint theme (mirror of index.html) so the popover never flashes the
+      // wrong appearance when it opens.
+      try {
+        var t = localStorage.getItem("theme");
+        var dark =
+          t === "dark" ||
+          ((!t || t === "system") &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+    <style>
+      /* The popover window is transparent; the panel provides its own surface. */
+      html,
+      body,
+      #root {
+        height: 100%;
+        background: transparent !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/popover/main.tsx"></script>
+  </body>
+</html>
