@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLaunchStore } from "@/store/launch-store";
@@ -15,7 +16,17 @@ const statusColor: Record<StepStatus, string> = {
  *  + partial-restore summary. Renders nothing when no run has started. */
 export function LaunchProgress() {
   const { order, steps, summary, retry } = useLaunchStore();
+  const [retrying, setRetrying] = useState<string | null>(null);
   if (order.length === 0) return null;
+
+  const onRetry = async (stepId: string) => {
+    setRetrying(stepId);
+    try {
+      await retry(stepId);
+    } finally {
+      setRetrying(null);
+    }
+  };
 
   return (
     <div className="rounded-xl border border-border bg-elevated/60 p-4">
@@ -38,9 +49,11 @@ export function LaunchProgress() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => void retry(s.stepId)}
+                  loading={retrying === s.stepId}
+                  onClick={() => void onRetry(s.stepId)}
                 >
-                  <RotateCw className="h-3.5 w-3.5" /> Retry
+                  {retrying !== s.stepId && <RotateCw className="h-3.5 w-3.5" />}{" "}
+                  Retry
                 </Button>
               )}
             </li>
