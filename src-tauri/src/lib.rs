@@ -74,6 +74,35 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+/// Apply NSVisualEffectView vibrancy to the main window (sidebar material) and
+/// the popover (popover material). Non-fatal: a failure is logged, never panics,
+/// and the translucent app surfaces remain readable without the effect.
+#[cfg(target_os = "macos")]
+fn apply_window_vibrancy(app: &AppHandle) {
+    use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
+
+    if let Some(main) = app.get_webview_window("main") {
+        if let Err(e) = apply_vibrancy(
+            &main,
+            NSVisualEffectMaterial::Sidebar,
+            Some(NSVisualEffectState::Active),
+            None,
+        ) {
+            tracing::warn!(error = %e, "failed to apply main-window vibrancy");
+        }
+    }
+    if let Some(popover) = app.get_webview_window("popover") {
+        if let Err(e) = apply_vibrancy(
+            &popover,
+            NSVisualEffectMaterial::Popover,
+            Some(NSVisualEffectState::Active),
+            None,
+        ) {
+            tracing::warn!(error = %e, "failed to apply popover vibrancy");
+        }
+    }
+}
+
 /// Build the menu-bar tray: an embedded monochrome template icon, a right-click
 /// Open/Quit menu, and a left-click that reveals the main window. (Phase 4 swaps
 /// the left-click to toggle the popover.)
@@ -135,6 +164,8 @@ pub fn run() {
         .manage(RunRegistry::new())
         .setup(|app| {
             setup_tray(app.handle())?;
+            #[cfg(target_os = "macos")]
+            apply_window_vibrancy(app.handle());
             Ok(())
         });
 

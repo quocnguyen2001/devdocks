@@ -177,7 +177,10 @@
   }
   body {
     margin: 0;
-    background-color: var(--background);
+    /* Transparent so the native NSVisualEffectView (vibrancy) shows through on
+       macOS. The readable app surface lives on the shell root (a translucent
+       token), which also degrades gracefully if vibrancy is unavailable. */
+    background-color: transparent;
     color: var(--foreground);
     /* System stack — SF Pro on macOS for first-class native feel (Decision #1). */
     font-family:
@@ -194,6 +197,21 @@
    Use the `tabular` utility for column-aligned digits (paths, counts, timeouts). */
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Native macOS window chrome (Phase 5): the overlay titlebar keeps traffic
+   lights top-left; reserve this height so content doesn't underlap them. */
+:root {
+  --title-bar-height: 28px;
+}
+
+/* Drag regions for the frameless/overlay window. Apply `.drag-region` to the
+   titlebar strip; `.no-drag` on interactive controls inside it. */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* Reduced-motion baseline: neutralize CSS transitions/animations. JS `motion`
