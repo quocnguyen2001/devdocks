@@ -7,94 +7,51 @@ export interface ToolOption {
   label: string;
   /** Brand hex color, used for the `AppMonogram` fallback tile. */
   brandColor?: string;
-  /** Imported (fingerprinted) SVG logo url, when a bundled asset exists. */
+  /** Imported (fingerprinted) SVG logo url; auto-attached from APP_ICON_URLS by
+   *  id when a real logo is bundled, else undefined -> monogram fallback. */
   icon?: string;
 }
 
-export const IDE_OPTIONS: ToolOption[] = [
-  { id: "vscode", label: "VS Code", brandColor: "#007ACC", icon: APP_ICON_URLS.vscode },
+/** Attach the bundled real logo (if any) to each option by id, so the id list
+ *  stays the single source of truth and icons wire up automatically. */
+function withIcons(options: Omit<ToolOption, "icon">[]): ToolOption[] {
+  return options.map((o) => ({ ...o, icon: APP_ICON_URLS[o.id] }));
+}
+
+export const IDE_OPTIONS: ToolOption[] = withIcons([
+  { id: "vscode", label: "VS Code", brandColor: "#007ACC" },
   { id: "cursor", label: "Cursor", brandColor: "#1A1A1A" },
   { id: "windsurf", label: "Windsurf", brandColor: "#58E6D9" },
-  { id: "zed", label: "Zed", brandColor: "#084CCF", icon: APP_ICON_URLS.zed },
+  { id: "zed", label: "Zed", brandColor: "#084CCF" },
   { id: "phpstorm", label: "PhpStorm", brandColor: "#B345F1" },
   { id: "intellij", label: "IntelliJ IDEA", brandColor: "#FE315D" },
-];
+]);
 
-export const TERMINAL_OPTIONS: ToolOption[] = [
-  {
-    id: "iterm2",
-    label: "iTerm2",
-    brandColor: "#2E2E2E",
-    icon: APP_ICON_URLS.iterm2,
-  },
-  {
-    id: "terminal",
-    label: "Terminal.app",
-    brandColor: "#3A3A3A",
-    icon: APP_ICON_URLS.terminal,
-  },
+export const TERMINAL_OPTIONS: ToolOption[] = withIcons([
+  { id: "iterm2", label: "iTerm2", brandColor: "#2E2E2E" },
+  { id: "terminal", label: "Terminal.app", brandColor: "#3A3A3A" },
   { id: "warp", label: "Warp (launch-only)", brandColor: "#01A4FF" },
-];
+]);
 
-export const AI_TOOL_OPTIONS: ToolOption[] = [
-  {
-    id: "claude-desktop",
-    label: "Claude Desktop",
-    brandColor: "#D97757",
-    icon: APP_ICON_URLS["claude-desktop"],
-  },
+export const AI_TOOL_OPTIONS: ToolOption[] = withIcons([
+  { id: "claude-desktop", label: "Claude Desktop", brandColor: "#D97757" },
   { id: "claude-code", label: "Claude Code", brandColor: "#D97757" },
   { id: "chatgpt", label: "ChatGPT", brandColor: "#10A37F" },
   { id: "gemini-cli", label: "Gemini CLI", brandColor: "#4285F4" },
   { id: "codex-cli", label: "Codex CLI", brandColor: "#412991" },
-];
+]);
 
-export const APP_OPTIONS: ToolOption[] = [
-  {
-    id: "docker-desktop",
-    label: "Docker Desktop",
-    brandColor: "#2496ED",
-    icon: APP_ICON_URLS["docker-desktop"],
-  },
-  {
-    id: "tableplus",
-    label: "TablePlus",
-    brandColor: "#4A67E3",
-    icon: APP_ICON_URLS.tableplus,
-  },
-  {
-    id: "dbeaver",
-    label: "DBeaver",
-    brandColor: "#372923",
-    icon: APP_ICON_URLS.dbeaver,
-  },
-  {
-    id: "postman",
-    label: "Postman",
-    brandColor: "#FF6C37",
-    icon: APP_ICON_URLS.postman,
-  },
+export const APP_OPTIONS: ToolOption[] = withIcons([
+  { id: "docker-desktop", label: "Docker Desktop", brandColor: "#2496ED" },
+  { id: "tableplus", label: "TablePlus", brandColor: "#4A67E3" },
+  { id: "dbeaver", label: "DBeaver", brandColor: "#372923" },
+  { id: "postman", label: "Postman", brandColor: "#FF6C37" },
   { id: "bruno", label: "Bruno", brandColor: "#F9814A" },
-  {
-    id: "redis-insight",
-    label: "Redis Insight",
-    brandColor: "#DC382D",
-    icon: APP_ICON_URLS["redis-insight"],
-  },
-  {
-    id: "chrome",
-    label: "Google Chrome",
-    brandColor: "#4285F4",
-    icon: APP_ICON_URLS.chrome,
-  },
-  { id: "arc", label: "Arc", brandColor: "#FF5257", icon: APP_ICON_URLS.arc },
-  {
-    id: "safari",
-    label: "Safari",
-    brandColor: "#0FB4E7",
-    icon: APP_ICON_URLS.safari,
-  },
-];
+  { id: "redis-insight", label: "Redis Insight", brandColor: "#DC382D" },
+  { id: "chrome", label: "Google Chrome", brandColor: "#4285F4" },
+  { id: "arc", label: "Arc", brandColor: "#FF5257" },
+  { id: "safari", label: "Safari", brandColor: "#0FB4E7" },
+]);
 
 /** Every known tool id, for a one-shot detection sweep. */
 export const ALL_TOOL_IDS: string[] = [

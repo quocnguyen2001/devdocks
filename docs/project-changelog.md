@@ -18,12 +18,17 @@
     anchored below the field, staying fully visible even when the form scrolls
     (previously clipped by the section/scroll container); closes on
     outside-click / Escape / scroll / resize.
-  - **App picker with logos** — AI-tools and applications are chosen from a tile
-    grid showing per-app logos (bundled brand SVGs for common apps: VS Code, Zed,
-    iTerm2, Terminal, Docker, Postman, Chrome, Safari, Arc, TablePlus, DBeaver,
-    Redis Insight, Claude) with a colored-monogram fallback for the rest;
-    multi-select, keyboard-accessible, availability-annotated. Selection data is
-    unchanged.
+  - **App picker with logos, everywhere** — IDE, terminals, AI-tools, and
+    applications are all chosen from logo tiles: IDE and per-terminal app are
+    single-select pills, AI-tools/apps are a multi-select grid. Icons are **real
+    downloaded brand logos** (19 apps, sourced from the dashboard-icons / svgl
+    sets) shown on a light plate so they stay legible in both themes; a colored
+    monogram is the fallback for apps with no upstream SVG (iTerm2, TablePlus,
+    DBeaver, Bruno, …). Keyboard-accessible, availability-annotated; the
+    workspace data model is unchanged.
+  - **Smoother interactions** — tiles give press + spring-in selection feedback,
+    and terminal / browser-URL rows animate in and out when added or removed
+    (all reduced-motion aware).
   - **Even popover corners** — the tray popover's square native window shadow is
     disabled (`shadow: false`) so the rounded panel reads with even corners over
     the vibrancy material; the panel keeps its own soft shadow.
