@@ -17,6 +17,33 @@ export const emptyFilters: FilterState = {
   sort: "name",
 };
 
+/** True when any search/tag/favorites filter is active. When false, the
+ *  dashboard shows the resting Favorites/Recent/All sections; when true it
+ *  collapses to a single flat results list. */
+export function hasActiveFilters(state: FilterState): boolean {
+  return (
+    state.search.trim() !== "" ||
+    state.favoritesOnly ||
+    state.tags.length > 0
+  );
+}
+
+/** Recently-launched workspaces (those with a `lastLaunched`), newest first,
+ *  capped at `limit`. Used for the resting "Recent" section. */
+export function recentWorkspaces(
+  workspaces: Workspace[],
+  limit = 5,
+): Workspace[] {
+  return workspaces
+    .filter((w) => w.metadata.lastLaunched)
+    .sort((a, b) =>
+      (b.metadata.lastLaunched ?? "").localeCompare(
+        a.metadata.lastLaunched ?? "",
+      ),
+    )
+    .slice(0, limit);
+}
+
 /** All distinct tags across workspaces, sorted. */
 export function allTags(workspaces: Workspace[]): string[] {
   return [...new Set(workspaces.flatMap((w) => w.tags))].sort((a, b) =>

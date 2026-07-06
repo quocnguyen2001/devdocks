@@ -102,7 +102,7 @@ export function PopoverApp() {
   return (
     <div
       onKeyDown={onKeyDown}
-      className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+      className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-popover/70 text-popover-foreground shadow-popover"
     >
       <div className="relative border-b border-border">
         <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />

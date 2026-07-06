@@ -3,6 +3,8 @@ import {
   allTags,
   emptyFilters,
   filterWorkspaces,
+  hasActiveFilters,
+  recentWorkspaces,
 } from "@/hooks/use-workspace-filters";
 import type { Workspace } from "@/types/workspace";
 
@@ -82,5 +84,29 @@ describe("filterWorkspaces", () => {
 
   it("collects distinct sorted tags", () => {
     expect(allTags(list)).toEqual(["go", "js", "php", "react"]);
+  });
+});
+
+describe("hasActiveFilters", () => {
+  it("is false for empty filters", () => {
+    expect(hasActiveFilters(emptyFilters)).toBe(false);
+    // Sort alone is not an "active filter" (sections still show at rest).
+    expect(hasActiveFilters({ ...emptyFilters, sort: "recent" })).toBe(false);
+  });
+
+  it("is true when search, tags, or favoritesOnly are set", () => {
+    expect(hasActiveFilters({ ...emptyFilters, search: "x" })).toBe(true);
+    expect(hasActiveFilters({ ...emptyFilters, tags: ["php"] })).toBe(true);
+    expect(hasActiveFilters({ ...emptyFilters, favoritesOnly: true })).toBe(true);
+  });
+});
+
+describe("recentWorkspaces", () => {
+  it("returns only launched workspaces, newest first", () => {
+    expect(ids(recentWorkspaces(list))).toEqual(["2", "1"]);
+  });
+
+  it("caps at the given limit", () => {
+    expect(recentWorkspaces(list, 1).map((w) => w.id)).toEqual(["2"]);
   });
 });

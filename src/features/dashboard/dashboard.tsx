@@ -1,22 +1,21 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { DashboardSection } from "@/features/dashboard/dashboard-section";
 import { WorkspaceCard } from "@/features/dashboard/workspace-card";
+import { WorkspaceCardSkeleton } from "@/features/dashboard/workspace-card-skeleton";
 import { LaunchProgress } from "@/features/launch/launch-progress";
 import {
   allTags,
   emptyFilters,
   filterWorkspaces,
+  hasActiveFilters,
+  recentWorkspaces,
   type FilterState,
+  type SortMode,
 } from "@/hooks/use-workspace-filters";
 import { cn } from "@/lib/utils";
 import { useDiscoveryStore } from "@/store/discovery-store";
@@ -34,7 +33,7 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
     useWorkspaceStore();
   const { favorites, hydrate, toggleFavorite } = useDiscoveryStore();
   const launch = useLaunchStore((s) => s.launch);
-  const launching = useLaunchStore((s) => s.isLaunching);
+  const launchingId = useLaunchStore((s) => s.launchingWorkspaceId);
 
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -51,10 +50,15 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
 
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
   const tags = useMemo(() => allTags(workspaces), [workspaces]);
-  const visible = useMemo(
+  const filtered = useMemo(
     () => filterWorkspaces(workspaces, filters, favoriteSet),
     [workspaces, filters, favoriteSet],
   );
+  const favoriteList = useMemo(
+    () => filterWorkspaces(workspaces, filters, favoriteSet).filter((w) => favoriteSet.has(w.id)),
+    [workspaces, filters, favoriteSet],
+  );
+  const recentList = useMemo(() => recentWorkspaces(workspaces), [workspaces]);
 
   const toggleTag = (t: string) =>
     setFilters((f) => ({
@@ -65,6 +69,21 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
     }));
 
   const hasWorkspaces = workspaces.length > 0;
+  const filtering = hasActiveFilters(filters);
+
+  const renderCard = (ws: Workspace) => (
+    <WorkspaceCard
+      key={ws.id}
+      ws={ws}
+      isFavorite={favoriteSet.has(ws.id)}
+      launching={launchingId === ws.id}
+      onLaunch={() => launch(ws)}
+      onToggleFavorite={() => void toggleFavorite(ws.id)}
+      onEdit={() => onEdit(ws)}
+      onDuplicate={() => void duplicate(ws.id)}
+      onDelete={() => void remove(ws.id)}
+    />
+  );
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
@@ -105,32 +124,28 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
               {t}
             </FilterChip>
           ))}
-          <div className="ml-auto flex items-center gap-1 text-muted-foreground">
-            <span>Sort</span>
-            <button
-              type="button"
-              className={cn(filters.sort === "name" && "text-foreground")}
-              onClick={() => setFilters((f) => ({ ...f, sort: "name" }))}
-            >
-              name
-            </button>
-            <span>·</span>
-            <button
-              type="button"
-              className={cn(filters.sort === "recent" && "text-foreground")}
-              onClick={() => setFilters((f) => ({ ...f, sort: "recent" }))}
-            >
-              recent
-            </button>
-          </div>
+          <SortControl
+            value={filters.sort}
+            onChange={(sort) => setFilters((f) => ({ ...f, sort }))}
+          />
         </div>
       )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+
+      {isLoading && !hasWorkspaces && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <WorkspaceCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
 
       {!isLoading && !hasWorkspaces && (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-16 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
+          <div className="rounded-full bg-brand-muted p-3 text-brand">
+            <Plus className="h-6 w-6" />
+          </div>
           <p className="text-sm font-medium">No workspaces yet</p>
           <p className="max-w-xs text-sm text-muted-foreground">
             Create your first workspace to restore your whole dev environment
@@ -142,33 +157,73 @@ export function Dashboard({ onNew, onEdit }: DashboardProps) {
         </div>
       )}
 
-      {hasWorkspaces && visible.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No workspaces match the current filters.
-        </p>
+      {/* Filtering → flat results; resting → Favorites / Recent / All sections. */}
+      {hasWorkspaces && filtering && (
+        <>
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No workspaces match the current filters.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filtered.map(renderCard)}
+            </div>
+          )}
+        </>
       )}
 
-      {visible.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {visible.map((ws) => (
-            <WorkspaceCard
-              key={ws.id}
-              ws={ws}
-              isFavorite={favoriteSet.has(ws.id)}
-              launching={launching}
-              onLaunch={() => launch(ws)}
-              onToggleFavorite={() => void toggleFavorite(ws.id)}
-              onEdit={() => onEdit(ws)}
-              onDuplicate={() => void duplicate(ws.id)}
-              onDelete={() => {
-                if (confirm(`Delete "${ws.name}"?`)) void remove(ws.id);
-              }}
-            />
-          ))}
+      {hasWorkspaces && !filtering && (
+        <div className="space-y-6">
+          <DashboardSection title="Favorites" count={favoriteList.length}>
+            {favoriteList.map(renderCard)}
+          </DashboardSection>
+          <DashboardSection title="Recent" count={recentList.length}>
+            {recentList.map(renderCard)}
+          </DashboardSection>
+          <DashboardSection title="All workspaces" count={filtered.length}>
+            {filtered.map(renderCard)}
+          </DashboardSection>
         </div>
       )}
 
       <LaunchProgress />
+    </div>
+  );
+}
+
+function SortControl({
+  value,
+  onChange,
+}: {
+  value: SortMode;
+  onChange: (v: SortMode) => void;
+}) {
+  const options: { id: SortMode; label: string }[] = [
+    { id: "name", label: "Name" },
+    { id: "recent", label: "Recent" },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Sort workspaces"
+      className="ml-auto flex items-center rounded-lg border border-input bg-muted p-0.5"
+    >
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={value === o.id}
+          onClick={() => onChange(o.id)}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            value === o.id
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

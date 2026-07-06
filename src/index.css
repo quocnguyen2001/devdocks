@@ -38,6 +38,30 @@
   --elevated: oklch(1 0 0);
 
   --ring: var(--brand);
+
+  /* Semantic state colors (light). Green is deepened for text contrast on white
+     (replaces the hardcoded green-600/400 in launch-progress). */
+  --success: oklch(0.55 0.15 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.15 75);
+  --warning-foreground: oklch(0.2 0 0);
+  --info: oklch(0.58 0.16 250);
+  --info-foreground: oklch(0.99 0 0);
+
+  /* Elevation scale — macOS-flavored: low-spread, soft, cool-neutral. */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-md: 0 2px 6px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.12), 0 2px 6px oklch(0 0 0 / 0.08);
+  --shadow-popover: 0 12px 32px oklch(0 0 0 / 0.18), 0 2px 8px oklch(0 0 0 / 0.1);
+
+  /* Motion tokens (Phase 6 `motion` variants util consumes these).
+     Spring reference for JS motion: stiffness 200 / damping 15. */
+  --duration-fast: 100ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 .dark {
@@ -69,6 +93,21 @@
   --elevated: oklch(0.205 0 0);
 
   --ring: var(--brand);
+
+  /* Semantic state colors (dark) — lifted lightness for legibility on dark. */
+  --success: oklch(0.78 0.17 152);
+  --success-foreground: oklch(0.2 0 0);
+  --warning: oklch(0.82 0.15 80);
+  --warning-foreground: oklch(0.2 0 0);
+  --info: oklch(0.72 0.15 250);
+  --info-foreground: oklch(0.15 0 0);
+
+  /* Elevation scale (dark) — stronger blacks, subtler spread. */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.5), 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-md: 0 2px 6px oklch(0 0 0 / 0.55), 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.45);
+  --shadow-popover: 0 12px 32px oklch(0 0 0 / 0.7), 0 2px 8px oklch(0 0 0 / 0.5);
 }
 
 /* Map CSS variables to Tailwind v4 theme tokens so utilities like
@@ -101,9 +140,30 @@
   --color-surface: var(--surface);
   --color-elevated: var(--elevated);
 
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Elevation utilities: shadow-xs … shadow-popover (themed via the vars). */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-popover: var(--shadow-popover);
+
+  /* Easing utilities: ease-out / ease-in. */
+  --ease-out: var(--ease-out);
+  --ease-in: var(--ease-in);
+
+  /* Radius scale. sm/md/lg unchanged (no regression this phase); xl is new for
+     modals/panels (macOS 26 baseline, per Decision #7). */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  --radius-xl: 12px;
 }
 
 @layer base {
@@ -117,11 +177,52 @@
   }
   body {
     margin: 0;
-    background-color: var(--background);
+    /* Transparent so the native NSVisualEffectView (vibrancy) shows through on
+       macOS. The readable app surface lives on the shell root (a translucent
+       token), which also degrades gracefully if vibrancy is unavailable. */
+    background-color: transparent;
     color: var(--foreground);
+    /* System stack — SF Pro on macOS for first-class native feel (Decision #1). */
     font-family:
-      ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI",
-      sans-serif;
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "SF Pro Text", "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1;
+  }
+}
+
+/* Type scale reference (documented; applied via Tailwind text-* utilities):
+   title 28/600 · section 17/600 · body 13–14/400 · label 11–12/500 · mono 12/400.
+   Use the `tabular` utility for column-aligned digits (paths, counts, timeouts). */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native macOS window chrome (Phase 5): the overlay titlebar keeps traffic
+   lights top-left; reserve this height so content doesn't underlap them. */
+:root {
+  --title-bar-height: 28px;
+}
+
+/* Drag regions for the frameless/overlay window. Apply `.drag-region` to the
+   titlebar strip; `.no-drag` on interactive controls inside it. */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Reduced-motion baseline: neutralize CSS transitions/animations. JS `motion`
+   animations are gated separately via the useReducedMotion hook (Phase 6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
