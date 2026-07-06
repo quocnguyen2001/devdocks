@@ -17,6 +17,15 @@
 - **UI refresh** — Indigo brand token + surface/elevation applied app-wide
   (primary buttons, cards, active nav, filters, focus rings); the neutral hover
   token is unchanged.
+- **UI/UX elevation (Pro Max)** — a design-token system (elevation, semantic
+  state colors, motion, typography) plus an elevated component kit (loading
+  buttons, styled select, in-app dialogs, toasts, color-swatch input). The
+  dashboard now groups **Favorites / Recent / All** with a segmented sort,
+  tool-stack icons, per-card launch state, and skeleton loading. The workspace
+  editor gains a sticky action bar, collapsible sections, on-blur validation
+  with an accessible error summary, and Undo on row removal. Native `confirm()`
+  dialogs are replaced by in-app dialogs; motion is centralized and
+  reduced-motion-safe throughout.
 
 ### Known limitations (this release)
 
