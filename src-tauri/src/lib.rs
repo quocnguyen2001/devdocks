@@ -92,11 +92,13 @@ fn apply_window_vibrancy(app: &AppHandle) {
         }
     }
     if let Some(popover) = app.get_webview_window("popover") {
+        // Radius matches the DOM panel's 14px corner so the native material
+        // doesn't bleed past the rounded border.
         if let Err(e) = apply_vibrancy(
             &popover,
             NSVisualEffectMaterial::Popover,
             Some(NSVisualEffectState::Active),
-            None,
+            Some(14.0),
         ) {
             tracing::warn!(error = %e, "failed to apply popover vibrancy");
         }

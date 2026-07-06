@@ -30,8 +30,8 @@ export function ToolChips({
             className={cn(
               "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-input bg-background hover:bg-accent",
+                ? "border-brand bg-brand text-brand-foreground"
+                : "border-input bg-transparent hover:bg-accent",
             )}
           >
             {opt.label}

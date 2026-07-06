@@ -50,7 +50,7 @@ export function ColorSwatchInput({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "h-9 w-9 shrink-0 rounded-lg border border-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "h-9 w-9 shrink-0 rounded-md border border-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           !valid && "bg-muted",
         )}
         style={valid ? { backgroundColor: value } : undefined}

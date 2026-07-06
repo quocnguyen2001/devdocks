@@ -42,6 +42,15 @@ export function PopoverApp() {
         void refresh();
         searchRef.current?.focus();
         searchRef.current?.select();
+        // Re-resolve the persisted theme (same logic as the popover.html
+        // pre-paint script) — this window has no ThemeProvider, so an in-app
+        // theme change in the main window would otherwise leave it stale.
+        const t = localStorage.getItem("theme");
+        const dark =
+          t === "dark" ||
+          (t !== "light" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
       }),
       listen("workspaces:changed", () => void refresh()),
     ];
@@ -178,14 +187,14 @@ export function PopoverApp() {
             void invoke("open_main_window");
             hide();
           }}
-          className="flex items-center gap-1 rounded px-2 py-1 hover:bg-accent hover:text-foreground"
+          className="flex items-center gap-1 rounded px-2 py-1 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Plus className="h-3.5 w-3.5" /> Open DevDock
         </button>
         <button
           type="button"
           onClick={() => void invoke("quit_app")}
-          className="flex items-center gap-1 rounded px-2 py-1 hover:bg-accent hover:text-foreground"
+          className="flex items-center gap-1 rounded px-2 py-1 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Power className="h-3.5 w-3.5" /> Quit
         </button>

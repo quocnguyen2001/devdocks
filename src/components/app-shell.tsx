@@ -25,7 +25,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold tracking-tight">DevDock</span>
         </div>
         <nav className="mt-2 flex flex-col gap-1 text-sm">
-          <span className="flex items-center gap-2 rounded-md bg-brand-muted px-3 py-2 font-medium text-foreground">
+          {/* border-l-2 + pl-[10px] keeps the label aligned with the px-3 grid. */}
+          <span className="flex items-center gap-2 rounded-md border-l-2 border-brand bg-brand-muted py-2 pl-[10px] pr-3 font-medium text-foreground">
             <LayoutGrid className="h-4 w-4" />
             Workspaces
           </span>

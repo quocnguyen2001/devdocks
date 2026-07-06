@@ -13,7 +13,8 @@ type ButtonSize = "default" | "sm" | "lg" | "icon";
 const variantClasses: Record<ButtonVariant, string> = {
   // Primary CTA is the brand (Indigo) — the app's main brand signal.
   default: "bg-brand text-brand-foreground hover:bg-brand/90 active:bg-brand/95",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  secondary:
+    "border border-border bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "hover:bg-accent hover:text-accent-foreground",
   outline:
     "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
