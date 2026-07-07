@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use tokio_util::sync::CancellationToken;
+
 use crate::launch::{LaunchError, TermApp};
 use crate::models::workspace::OnTimeout;
 
@@ -79,6 +81,9 @@ pub struct RunPlan {
 pub struct RunRegistry {
     active: Mutex<Option<String>>,
     plans: Mutex<HashMap<String, RunPlan>>,
+    /// The one active workflow run's cancel token (never a map — only one
+    /// automation is ever active, sharing `active` with launches).
+    workflow_token: Mutex<Option<(String, CancellationToken)>>,
 }
 
 impl RunRegistry {
@@ -150,5 +155,135 @@ impl RunRegistry {
             .iter()
             .find(|s| s.id == step_id)
             .cloned()
+    }
+
+    fn lock_workflow_token(
+        &self,
+    ) -> std::sync::MutexGuard<'_, Option<(String, CancellationToken)>> {
+        self.workflow_token
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// Reserve the single-active slot for a workflow run, storing its cancel token.
+    /// Shares `active` with launches → mutual exclusion of all automation. The caller MUST
+    /// wrap the run in a `WorkflowRunGuard` so the slot is freed on ANY exit.
+    pub fn reserve_workflow(&self, run_id: String) -> Result<CancellationToken, LaunchError> {
+        let mut active = self.lock_active();
+        if active.is_some() {
+            return Err(LaunchError::AlreadyRunning);
+        }
+        let token = CancellationToken::new();
+        *self.lock_workflow_token() = Some((run_id.clone(), token.clone()));
+        *active = Some(run_id);
+        Ok(token)
+    }
+
+    /// Free the slot + clear the token. Idempotent; only acts if `run_id` still owns the slot.
+    pub fn finish_workflow(&self, run_id: &str) {
+        let mut active = self.lock_active();
+        if active.as_deref() == Some(run_id) {
+            *active = None;
+        }
+        let mut tok = self.lock_workflow_token();
+        if tok.as_ref().map(|(id, _)| id.as_str()) == Some(run_id) {
+            *tok = None;
+        }
+    }
+
+    /// Cancel whatever workflow run currently holds the active slot. Works without the
+    /// frontend knowing the run_id (covers popover-initiated runs). Idempotent.
+    pub fn cancel_active_run(&self) -> bool {
+        match &*self.lock_workflow_token() {
+            Some((_, token)) => {
+                token.cancel();
+                true
+            }
+            None => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn plan(run_id: &str) -> RunPlan {
+        RunPlan {
+            run_id: run_id.to_string(),
+            workspace_id: "ws".to_string(),
+            steps: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn reserve_workflow_blocks_second_reserve_and_launch() {
+        let reg = RunRegistry::default();
+        let _token = reg.reserve_workflow("wf-1".to_string()).unwrap();
+
+        // A second workflow reservation is rejected while one is active.
+        assert!(matches!(
+            reg.reserve_workflow("wf-2".to_string()),
+            Err(LaunchError::AlreadyRunning)
+        ));
+        // A workspace launch shares the same gate and is also rejected.
+        assert!(matches!(
+            reg.begin(plan("launch-1")),
+            Err(LaunchError::AlreadyRunning)
+        ));
+        // And a retry cannot slip in either.
+        assert!(matches!(
+            reg.acquire_retry(),
+            Err(LaunchError::AlreadyRunning)
+        ));
+    }
+
+    #[test]
+    fn active_launch_blocks_workflow_reservation() {
+        let reg = RunRegistry::default();
+        reg.begin(plan("launch-1")).unwrap();
+        assert!(matches!(
+            reg.reserve_workflow("wf-1".to_string()),
+            Err(LaunchError::AlreadyRunning)
+        ));
+    }
+
+    #[test]
+    fn cancel_active_run_cancels_the_stored_token() {
+        let reg = RunRegistry::default();
+        let token = reg.reserve_workflow("wf-1".to_string()).unwrap();
+        assert!(!token.is_cancelled());
+        assert!(reg.cancel_active_run());
+        assert!(token.is_cancelled());
+    }
+
+    #[test]
+    fn cancel_active_run_is_noop_with_no_active_workflow() {
+        let reg = RunRegistry::default();
+        assert!(!reg.cancel_active_run());
+    }
+
+    #[test]
+    fn finish_workflow_frees_slot_and_clears_token() {
+        let reg = RunRegistry::default();
+        let _token = reg.reserve_workflow("wf-1".to_string()).unwrap();
+        reg.finish_workflow("wf-1");
+
+        // Slot is free: a new workflow and a launch can both proceed now.
+        assert!(reg.reserve_workflow("wf-2".to_string()).is_ok());
+        reg.finish_workflow("wf-2");
+        assert!(reg.begin(plan("launch-1")).is_ok());
+    }
+
+    #[test]
+    fn finish_workflow_ignores_a_stale_run_id() {
+        let reg = RunRegistry::default();
+        let _token = reg.reserve_workflow("wf-1".to_string()).unwrap();
+        // A finish for a different run must not free the live slot.
+        reg.finish_workflow("wf-other");
+        assert!(matches!(
+            reg.reserve_workflow("wf-2".to_string()),
+            Err(LaunchError::AlreadyRunning)
+        ));
     }
 }

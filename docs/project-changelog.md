@@ -2,6 +2,26 @@
 
 ## v0.2.0 — unreleased (Menu Bar + Brand Refresh)
 
+- **Workflows (sequential macro automation)** — a new top-level feature: build an
+  ordered, drag + keyboard-reorderable list of steps DevDock runs one after
+  another. A step is one of four kinds — `launchWorkspace` (run an existing
+  workspace), `openApp` (open a macOS app), `runScript` (a shell command with a
+  timeout), or `delay` (wait N ms) — each with a per-step halt/continue failure
+  policy and an enable/disable toggle. Running a workflow returns immediately
+  and streams live per-step progress plus a terminal summary, so a run started
+  from **any** window — including the menu-bar popover's quick-run — is
+  observable and **cancellable** from the main window (an in-flight script is
+  killed). The engine reuses the existing launch primitives rather than
+  forking a parallel one, so a workspace launch and a workflow run cannot run
+  at the same time. Each run leaves a coarse last-run status on the workflow,
+  shown on the list and in the popover.
+  - *Known v1 limitations:* no node-graph/parallel/conditional steps, no
+    scheduling, no workflow-calls-workflow, no per-run persistent logs (exit
+    status only — no captured stdout/stderr), no import/export, no per-step
+    retry. A cancelled/quit `runScript` kills the direct shell child only —
+    grandchild processes are not process-group killed (documented; future
+    work).
+
 - **UI polish pass (UI-only)** — a round of targeted refinements on top of the
   Linear redesign, addressing direct user feedback:
   - **Applied type scale** — the documented SF-Pro scale is now real utility

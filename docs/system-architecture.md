@@ -28,6 +28,18 @@ Full phased plan: [`plans/260705-1539-devdock-macos-workspace-launcher/plan.md`]
    audited two-layer escaping in `escape.rs` is the boundary for the terminal path.
 5. **Terminal tiers:** iTerm2 + Terminal.app get full AppleScript automation;
    Warp is launch-only (no scripting API).
+6. **Workflows reuse the launch engine.** A workflow is a flat, drag-reorderable
+   step list (`launchWorkspace | openApp | runScript | delay`) rather than a
+   parallel engine: `runScript`/`delay` share `run_hook`/`tokio::select!`, and a
+   `launchWorkspace` step resolves + runs its target's sub-steps via
+   `build_plan` + `run_action` at execution time (not at plan-build time, so a
+   workspace deleted mid-run fails cleanly at its own step). One `RunRegistry`
+   gates both workspace launches and workflow runs through a single active
+   slot, so no two automations run at once; cancellation is a
+   `tokio_util::sync::CancellationToken` checked between steps and raced inside
+   an in-flight delay/script, letting `cancel_active_run()` stop whichever
+   automation — including one started from the menu-bar popover — is active
+   without a frontend `run_id` handoff.
 
 ## Data flow
 
@@ -36,6 +48,12 @@ React UI ──invoke()──▶ #[tauri::command] (Rust)
   │  Zustand (view)        │  serde read/write ▶ app_config_dir/workspaces/*.json
   │                        │  launch orchestrator (tokio) ▶ open / osascript / docker …
   ◀──── event listener ──── emit("launch:progress", …) ◀ per-step status
+  │  workflow-run-store    │  serde read/write ▶ app_config_dir/workflows/*.json
+  │  (module-scope         │  workflow engine (tokio) ▶ launchWorkspace/openApp/
+  │   listeners, so a run  │  runScript/delay, reusing the launch primitives
+  │   from any window is   │
+  │   observable here)     │
+  ◀──── event listener ──── emit("workflow:progress" / "workflow:done", …)
 ```
 
 ## Layout
@@ -44,10 +62,18 @@ React UI ──invoke()──▶ #[tauri::command] (Rust)
 src/                  React 19 frontend
   components/ui/       shadcn/ui-compatible primitives
   components/          app components (app-shell, theme-provider, theme-toggle)
-  features/            dashboard, workspace-config, launch (added in later phases)
+  features/            dashboard, workspace-config, launch, workflows (editor + drag reorder)
   hooks/  lib/  store/  types/
+    lib/workflow-schema.ts     Zod source of truth (mirrors the Rust model)
+    lib/workflow-ipc.ts        typed `invoke`/`listen` wrappers
+    store/workflow-store.ts    CRUD (list/save/delete/duplicate)
+    store/workflow-run-store.ts run state (module-scope event listeners)
 src-tauri/            Rust backend
   src/                 lib.rs (entry + plugins + tracing), main.rs
+  src/models/workflow.rs       `Workflow` + `StepAction` discriminated union
+  src/storage/workflow_repo.rs one JSON per workflow under `workflows/<id>.json`
+  src/launch/workflow_run.rs   sink-shaped step loop, cancellation, single-active guard
+  src/commands/workflow.rs     CRUD + run/cancel command handlers
   capabilities/        ACL (default.json)
   tauri.conf.json  Cargo.toml
 .github/workflows/    CI (frontend typecheck+build, Rust fmt+clippy+check)
@@ -72,3 +98,14 @@ Developer ID for notarized distribution (the release workflow is ready and just
 needs signing secrets); running the Playwright smoke (needs `playwright install`;
 React-layer only); and measuring the cold-start budget on-device. See the plan
 for phase details and the red-team review log.
+
+**Workflows** (sequential macro automation) are complete: a flat, drag +
+keyboard-reorderable step list (`launchWorkspace | openApp | runScript | delay`)
+with per-step `enabled`/`failurePolicy`; `run_workflow` returns a `run_id`
+immediately and streams progress + a terminal summary over
+`workflow:progress`/`workflow:done`, observable and cancellable from any
+window (including a run started from the menu-bar popover); a workspace launch
+and a workflow run share the single-active gate so only one automation ever
+runs; each run records a coarse `lastRunAt`/`lastRunStatus` on the workflow.
+See [`plans/260707-1714-workflows-macro-engine/plan.md`](../plans/260707-1714-workflows-macro-engine/plan.md)
+for phase details, the red-team review log, and the manual QA checklist.

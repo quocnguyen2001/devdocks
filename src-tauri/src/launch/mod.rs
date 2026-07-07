@@ -11,6 +11,7 @@ pub mod launchers;
 pub mod orchestrator;
 pub mod path_env;
 pub mod run_plan;
+pub mod workflow_run;
 
 use serde::Serialize;
 use thiserror::Error;
@@ -34,6 +35,7 @@ pub enum StepStatus {
     Ok,
     Failed,
     Skipped,
+    Cancelled,
 }
 
 /// Terminal apps that support full AppleScript automation (cwd + command).
@@ -67,6 +69,12 @@ impl StepOutcome {
     pub fn skipped(msg: impl Into<String>) -> Self {
         Self {
             status: StepStatus::Skipped,
+            message: Some(msg.into()),
+        }
+    }
+    pub fn cancelled(msg: impl Into<String>) -> Self {
+        Self {
+            status: StepStatus::Cancelled,
             message: Some(msg.into()),
         }
     }

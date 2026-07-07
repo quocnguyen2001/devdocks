@@ -36,6 +36,7 @@ chrono = { version = "0.4", features = ["serde"] }
 font-kit = "0.14"
 thiserror = "2"
 tokio = { version = "1", features = ["process", "time", "rt", "macros", "sync"] }
+tokio-util = "0.7"
 shellexpand = "3"
 
 # macOS window vibrancy (NSVisualEffectView). Applied at setup, guarded + logged.

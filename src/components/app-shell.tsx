@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { LayoutGrid, Settings } from "lucide-react";
+import { LayoutGrid, Settings, Workflow } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
-export type NavSection = "workspaces" | "settings";
+export type NavSection = "workspaces" | "workflows" | "settings";
 
 interface AppShellProps {
   children: ReactNode;
@@ -14,6 +14,7 @@ interface AppShellProps {
 
 const NAV_ITEMS: { id: NavSection; label: string; icon: typeof LayoutGrid }[] = [
   { id: "workspaces", label: "Workspaces", icon: LayoutGrid },
+  { id: "workflows", label: "Workflows", icon: Workflow },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

@@ -1,6 +1,12 @@
 // Mirrors the Rust launch-engine event/response shapes (camelCase serde).
 
-export type StepStatus = "pending" | "running" | "ok" | "failed" | "skipped";
+export type StepStatus =
+  | "pending"
+  | "running"
+  | "ok"
+  | "failed"
+  | "skipped"
+  | "cancelled";
 
 export type DetectMethod =
   | "cli"

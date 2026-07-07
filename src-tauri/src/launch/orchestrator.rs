@@ -272,6 +272,7 @@ pub async fn execute_plan(app: &AppHandle, plan: &RunPlan) -> LaunchSummary {
                     aborted = true;
                 }
             }
+            StepStatus::Cancelled => {}
             StepStatus::Pending | StepStatus::Running => {}
         }
         emit(

@@ -17,6 +17,10 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager};
 
 use commands::launch::{detect_tools, launch_workspace, retry_step, run_before_close_hooks};
+use commands::workflow::{
+    cancel_active_run, delete_workflow, duplicate_workflow, get_workflow, list_workflows,
+    run_workflow, save_workflow,
+};
 use commands::workspace::{
     delete_workspace, duplicate_workspace, get_workspace, list_workspaces, save_workspace,
 };
@@ -184,6 +188,13 @@ pub fn run() {
         run_before_close_hooks,
         open_main_window,
         quit_app,
+        list_workflows,
+        get_workflow,
+        save_workflow,
+        delete_workflow,
+        duplicate_workflow,
+        run_workflow,
+        cancel_active_run,
         commands::fonts::list_system_fonts,
         commands::workspace::dev_seed_workspace
     ]);
@@ -200,10 +211,26 @@ pub fn run() {
         run_before_close_hooks,
         open_main_window,
         quit_app,
+        list_workflows,
+        get_workflow,
+        save_workflow,
+        delete_workflow,
+        duplicate_workflow,
+        run_workflow,
+        cancel_active_run,
         commands::fonts::list_system_fonts
     ]);
 
     builder
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                if app.state::<RunRegistry>().cancel_active_run() {
+                    // Give the spawned run task a moment to observe cancellation and let
+                    // run_hook's kill_on_drop SIGKILL the in-flight script child.
+                    std::thread::sleep(std::time::Duration::from_millis(2000));
+                }
+            }
+        });
 }

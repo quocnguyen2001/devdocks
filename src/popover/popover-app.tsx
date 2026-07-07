@@ -10,10 +10,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Plus, Power, Search } from "lucide-react";
+import { listWorkflows } from "@/lib/workflow-ipc";
 import { listWorkspaces } from "@/lib/workspace-ipc";
 import { filterByQuery, sortRecentFirst } from "@/popover/quick-launch";
 import { cn } from "@/lib/utils";
+import type { Workflow } from "@/types/workflow";
 import type { Workspace } from "@/types/workspace";
+
+type Section = "workspaces" | "workflows";
 
 /** Columns in the workspace grid; also the ↑/↓ keyboard step. */
 const GRID_COLS = 2;
@@ -35,14 +39,22 @@ const DEV_PREVIEW_WORKSPACES = [
 /** Menu-bar quick-actions popover: search + a recent-first quick-launch grid,
  *  keyboard driven, auto-hides on focus loss. Reuses the existing launch engine. */
 export function PopoverApp() {
+  const [section, setSection] = useState<Section>("workspaces");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const refresh = useCallback(async () => {
+  const refreshWorkspaces = useCallback(async () => {
     try {
-      setWorkspaces(sortRecentFirst(await listWorkspaces()));
+      setWorkspaces(
+        sortRecentFirst(
+          await listWorkspaces(),
+          (w) => w.metadata.lastLaunched,
+          (w) => w.name,
+        ),
+      );
     } catch {
       // Best-effort; leave the previous list. In a plain-browser dev preview
       // (no Tauri IPC) seed sample rows so the grid is inspectable — this branch
@@ -53,11 +65,29 @@ export function PopoverApp() {
     }
   }, []);
 
+  const refreshWorkflows = useCallback(async () => {
+    try {
+      setWorkflows(
+        sortRecentFirst(
+          await listWorkflows(),
+          (w) => w.metadata.lastRunAt,
+          (w) => w.name,
+        ),
+      );
+    } catch {
+      /* best-effort; leave the previous list */
+    }
+  }, []);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([refreshWorkspaces(), refreshWorkflows()]);
+  }, [refreshWorkspaces, refreshWorkflows]);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Refresh + focus search when shown; refresh on any workspace change (from main).
+  // Refresh + focus search when shown; refresh on any workspace/workflow change (from main).
   useEffect(() => {
     const subs = [
       listen("popover:shown", () => {
@@ -74,12 +104,13 @@ export function PopoverApp() {
             window.matchMedia("(prefers-color-scheme: dark)").matches);
         document.documentElement.classList.toggle("dark", dark);
       }),
-      listen("workspaces:changed", () => void refresh()),
+      listen("workspaces:changed", () => void refreshWorkspaces()),
+      listen("workflows:changed", () => void refreshWorkflows()),
     ];
     return () => {
       subs.forEach((s) => void s.then((un) => un()));
     };
-  }, [refresh]);
+  }, [refresh, refreshWorkspaces, refreshWorkflows]);
 
   // Auto-hide on focus loss, deferred so a transient blur doesn't hide it.
   // Guarded: the window API throws outside the Tauri runtime (e.g. a browser
@@ -103,12 +134,20 @@ export function PopoverApp() {
     return () => cleanup();
   }, []);
 
-  const visible = useMemo(
-    () => filterByQuery(workspaces, query),
+  const visibleWorkspaces = useMemo(
+    () =>
+      filterByQuery(workspaces, query, (w) => [w.name, w.path]),
     [workspaces, query],
   );
+  const visibleWorkflows = useMemo(
+    () => filterByQuery(workflows, query, (w) => [w.name]),
+    [workflows, query],
+  );
+  const visible: Array<Workspace | Workflow> =
+    section === "workspaces" ? visibleWorkspaces : visibleWorkflows;
 
   useEffect(() => setSelected(0), [query]);
+  useEffect(() => setSelected(0), [section]);
 
   const hide = () => void getCurrentWindow().hide();
 
@@ -120,6 +159,26 @@ export function PopoverApp() {
     }
     hide();
   }, []);
+
+  // Fire-and-hide: `run_workflow` resolves to a run_id immediately and the run
+  // continues on the backend; the main window's run store observes it (any
+  // `AlreadyRunning` rejection just means an already-visible run keeps going).
+  const runWorkflow = useCallback(async (wf: Workflow) => {
+    try {
+      await invoke("run_workflow", { workflow_id: wf.id });
+    } catch {
+      /* observed/surfaced in the main window's run store */
+    }
+    hide();
+  }, []);
+
+  const activate = useCallback(
+    (item: Workspace | Workflow) => {
+      if (section === "workspaces") void launch(item as Workspace);
+      else void runWorkflow(item as Workflow);
+    },
+    [section, launch, runWorkflow],
+  );
 
   // Two-column grid navigation: ←/→ move by one, ↑/↓ move by a row (GRID_COLS).
   const last = visible.length - 1;
@@ -138,8 +197,8 @@ export function PopoverApp() {
       setSelected((s) => Math.max(s - GRID_COLS, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const ws = visible[selected];
-      if (ws) void launch(ws);
+      const item = visible[selected];
+      if (item) activate(item);
     } else if (e.key === "Escape") {
       e.preventDefault();
       hide();
@@ -158,28 +217,60 @@ export function PopoverApp() {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search workspaces…"
+          placeholder={
+            section === "workspaces" ? "Search workspaces…" : "Search workflows…"
+          }
           className="w-full bg-transparent py-3 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground"
         />
+      </div>
+
+      <div className="flex gap-1 border-b border-border p-1.5">
+        {(["workspaces", "workflows"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSection(s)}
+            className={cn(
+              "flex-1 rounded-md px-2 py-1 text-xs font-medium capitalize transition-colors focus-visible:outline-none",
+              section === s
+                ? "bg-brand-muted text-brand"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            {s}
+          </button>
+        ))}
       </div>
 
       <div className="flex-1 overflow-auto p-2">
         {visible.length === 0 ? (
           <p className="p-6 text-center text-xs text-muted-foreground">
-            {workspaces.length === 0 ? "No workspaces yet." : "No matches."}
+            {section === "workspaces"
+              ? workspaces.length === 0
+                ? "No workspaces yet."
+                : "No matches."
+              : workflows.length === 0
+                ? "No workflows yet."
+                : "No matches."}
           </p>
         ) : (
           <div
             role="listbox"
-            aria-label="Workspaces"
+            aria-label={section === "workspaces" ? "Workspaces" : "Workflows"}
             className="grid grid-cols-2 gap-1.5"
           >
-            {visible.map((ws, i) => {
+            {visible.map((item, i) => {
               const isSelected = i === selected;
-              const accent = ws.accentColor || undefined;
+              const accent = item.accentColor || undefined;
+              const subtitle =
+                section === "workspaces"
+                  ? prettyPath((item as Workspace).path)
+                  : `${(item as Workflow).steps.length} step${
+                      (item as Workflow).steps.length === 1 ? "" : "s"
+                    }`;
               return (
                 <button
-                  key={ws.id}
+                  key={item.id}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
@@ -189,7 +280,7 @@ export function PopoverApp() {
                       : undefined
                   }
                   onMouseEnter={() => setSelected(i)}
-                  onClick={() => void launch(ws)}
+                  onClick={() => activate(item)}
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg border p-1.5 text-left transition-colors focus-visible:outline-none",
                     isSelected
@@ -205,14 +296,14 @@ export function PopoverApp() {
                     style={accent ? { backgroundColor: accent } : undefined}
                     aria-hidden
                   >
-                    {ws.name.charAt(0).toUpperCase()}
+                    {item.name.charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-medium leading-tight">
-                      {ws.name}
+                      {item.name}
                     </span>
                     <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted-foreground">
-                      {prettyPath(ws.path)}
+                      {subtitle}
                     </span>
                   </span>
                 </button>
