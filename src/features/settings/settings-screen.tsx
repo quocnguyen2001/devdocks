@@ -1,13 +1,11 @@
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { listSystemFonts } from "@/lib/fonts-ipc";
 import { useSettingsStore } from "@/store/settings-store";
-import {
-  FONT_FAMILY_LABELS,
-  UI_SCALE_LABELS,
-  type FontFamily,
-  type UiScale,
-} from "@/types/settings";
+import { UI_SCALE_LABELS, type UiScale } from "@/types/settings";
 import type { Theme } from "@/types/theme";
 import { cn } from "@/lib/utils";
 
@@ -108,10 +106,6 @@ const THEME_OPTIONS: Option<Theme>[] = [
   { value: "system", label: "System" },
 ];
 
-const FONT_OPTIONS = (Object.keys(FONT_FAMILY_LABELS) as FontFamily[]).map(
-  (v) => ({ value: v, label: FONT_FAMILY_LABELS[v] }),
-);
-
 const SCALE_OPTIONS = (Object.keys(UI_SCALE_LABELS) as UiScale[]).map((v) => ({
   value: v,
   label: UI_SCALE_LABELS[v],
@@ -134,6 +128,16 @@ export function SettingsScreen() {
   const fontId = useId();
   const scaleId = useId();
   const loginId = useId();
+
+  // Installed system fonts, loaded once from the OS (empty outside Tauri).
+  const [fonts, setFonts] = useState<string[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    void listSystemFonts().then((list) => active && setFonts(list));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 p-6">
@@ -160,15 +164,26 @@ export function SettingsScreen() {
         />
         <SettingRow
           label="Font"
-          description="System is SF Pro on macOS; Rounded / Mono / Serif use native families."
+          description="Any font installed on your Mac; System is SF Pro."
           labelId={fontId}
           control={
-            <Segmented
-              ariaLabelledby={fontId}
-              options={FONT_OPTIONS}
-              value={fontFamily}
-              onChange={(v) => void setFontFamily(v)}
-            />
+            fonts === null ? (
+              <Skeleton className="h-9 w-56 rounded-md" />
+            ) : (
+              <Select
+                aria-labelledby={fontId}
+                className="w-56"
+                value={fontFamily}
+                onChange={(e) => void setFontFamily(e.target.value)}
+              >
+                <option value="system">System (default)</option>
+                {fonts.map((f) => (
+                  <option key={f} value={f} style={{ fontFamily: `"${f}"` }}>
+                    {f}
+                  </option>
+                ))}
+              </Select>
+            )
           }
         />
         <SettingRow

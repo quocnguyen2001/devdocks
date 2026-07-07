@@ -50,11 +50,10 @@ export function AppShell({ children, active, onNavigate }: AppShellProps) {
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => onNavigate(id)}
                 className={cn(
-                  // border-l-2 + pl-[10px] keeps the label aligned with the px-3 grid.
-                  "flex items-center gap-2 rounded-md border-l-2 py-2 pl-[10px] pr-3 text-left font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-left font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   isActive
-                    ? "border-brand bg-brand-muted text-foreground"
-                    : "border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                    ? "bg-brand-muted text-foreground"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                 )}
               >
                 <Icon className="h-4 w-4" />

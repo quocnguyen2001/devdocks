@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { useSettingsStore } from "@/store/settings-store";
-import { FONT_STACKS, UI_SCALE_VALUES } from "@/types/settings";
+import { resolveFontStack, UI_SCALE_VALUES } from "@/types/settings";
 import type { Theme } from "@/types/theme";
 
 function applyTheme(theme: Theme, systemPrefersDark: boolean): void {
@@ -35,7 +35,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--app-font",
-      FONT_STACKS[fontFamily],
+      resolveFontStack(fontFamily),
     );
   }, [fontFamily]);
 

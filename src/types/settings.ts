@@ -1,27 +1,23 @@
-// Appearance settings applied app-wide from the Settings screen. All font choices
-// use native system font stacks — no bundled webfonts (keeps the app lean and
-// first-class-native on macOS).
+// Appearance settings applied app-wide from the Settings screen.
 
-export type FontFamily = "system" | "rounded" | "mono" | "serif";
+/** Chosen UI font: `"system"` = the native system stack (SF Pro on macOS), or a
+ *  specific installed family name enumerated from the OS (see `listSystemFonts`).
+ *  No bundled webfonts — everything is a font already on the machine. */
+export type FontFamily = string;
+
 export type UiScale = "compact" | "default" | "comfortable";
 
-/** CSS font stacks per choice. `ui-rounded`/`ui-serif`/`ui-monospace` resolve to
- *  SF Pro Rounded / New York / SF Mono on macOS. */
-export const FONT_STACKS: Record<FontFamily, string> = {
-  system:
-    'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif',
-  rounded:
-    'ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif',
-  mono: 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace',
-  serif: 'ui-serif, "New York", Georgia, "Times New Roman", serif',
-};
+/** Native system UI stack — the default, and the fallback appended after any
+ *  chosen family so text stays legible if that family lacks a glyph. */
+export const SYSTEM_FONT_STACK =
+  'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif';
 
-export const FONT_FAMILY_LABELS: Record<FontFamily, string> = {
-  system: "System",
-  rounded: "Rounded",
-  mono: "Mono",
-  serif: "Serif",
-};
+/** Resolve a `FontFamily` choice to a CSS `font-family` value. */
+export function resolveFontStack(family: FontFamily): string {
+  if (!family || family === "system") return SYSTEM_FONT_STACK;
+  // Quote the family (names can contain spaces) and keep the system fallback.
+  return `"${family}", ${SYSTEM_FONT_STACK}`;
+}
 
 /** Interface zoom factor per choice — scales the whole UI (text + spacing), the
  *  reliable way to size a px-based design like VS Code's zoom. */

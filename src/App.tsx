@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { AppShell, type NavSection } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/toast";
 import { Dashboard } from "@/features/dashboard/dashboard";
+import { WorkspaceEditorSkeleton } from "@/features/workspace-config/workspace-editor-skeleton";
 import { SettingsScreen } from "@/features/settings/settings-screen";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { runBeforeCloseHooks } from "@/lib/launch-ipc";
@@ -89,9 +90,7 @@ function App() {
         />
       )}
       {view.mode === "settings" && <SettingsScreen />}
-      <Suspense
-        fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}
-      >
+      <Suspense fallback={<WorkspaceEditorSkeleton />}>
         {view.mode === "new" && (
           <WorkspaceEditor onSave={handleSave} onCancel={backToList} />
         )}

@@ -191,6 +191,7 @@ pub fn run() {
         run_before_close_hooks,
         open_main_window,
         quit_app,
+        commands::fonts::list_system_fonts,
         commands::workspace::dev_seed_workspace
     ]);
     #[cfg(not(debug_assertions))]
@@ -205,7 +206,8 @@ pub fn run() {
         retry_step,
         run_before_close_hooks,
         open_main_window,
-        quit_app
+        quit_app,
+        commands::fonts::list_system_fonts
     ]);
 
     builder
