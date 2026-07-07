@@ -91,18 +91,11 @@ fn apply_window_vibrancy(app: &AppHandle) {
             tracing::warn!(error = %e, "failed to apply main-window vibrancy");
         }
     }
-    if let Some(popover) = app.get_webview_window("popover") {
-        // Radius matches the DOM panel's 14px corner so the native material
-        // doesn't bleed past the rounded border.
-        if let Err(e) = apply_vibrancy(
-            &popover,
-            NSVisualEffectMaterial::Popover,
-            Some(NSVisualEffectState::Active),
-            Some(14.0),
-        ) {
-            tracing::warn!(error = %e, "failed to apply popover vibrancy");
-        }
-    }
+    // The popover intentionally gets NO vibrancy: on macOS 26 the visual-effect
+    // view's corner-radius clip is unreliable, leaving a square material corner
+    // poking past the DOM panel's rounded border. Instead the popover renders an
+    // opaque rounded card on its transparent window and relies on the native
+    // window shadow (tauri.conf.json) to hug that rounded shape.
 }
 
 /// Build the menu-bar tray: an embedded monochrome template icon, a right-click

@@ -7,7 +7,9 @@
 :root {
   --radius: 0.625rem;
 
-  --background: oklch(0.975 0.002 265);
+  /* Grayer canvas so white cards, the popover, and elevated surfaces separate
+     cleanly instead of washing into a near-white field (light-mode prominence). */
+  --background: oklch(0.955 0.004 265);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -15,17 +17,19 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0.003 265);
+  --secondary: oklch(0.955 0.004 265);
   --secondary-foreground: oklch(0.22 0.01 265);
-  --muted: oklch(0.965 0.003 265);
-  --muted-foreground: oklch(0.52 0.01 265);
-  --accent: oklch(0.955 0.004 265);
+  --muted: oklch(0.96 0.004 265);
+  --muted-foreground: oklch(0.505 0.012 265);
+  --accent: oklch(0.945 0.006 265);
   --accent-foreground: oklch(0.22 0.01 265);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --border-strong: oklch(0.86 0 0);
-  --input: oklch(0.922 0 0);
+  /* Borders carry the elevation in light mode (shadows are overlay-only), so they
+     need to be visible — the old 0.922 hairline vanished against white surfaces. */
+  --border: oklch(0.885 0.006 265);
+  --border-strong: oklch(0.8 0.008 265);
+  --input: oklch(0.885 0.006 265);
 
   /* Brand (Indigo) — NEW token. Do NOT repoint the neutral `--accent` (used for
      hover/selected surfaces everywhere). Brand rides on `--brand`/`bg-brand`. */
