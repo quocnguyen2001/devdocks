@@ -191,10 +191,19 @@
        token), which also degrades gracefully if vibrancy is unavailable. */
     background-color: transparent;
     color: var(--foreground);
-    /* System stack — SF Pro on macOS for first-class native feel (Decision #1). */
-    font-family:
-      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      "SF Pro Text", "Segoe UI", sans-serif;
+    /* System stack — SF Pro on macOS for first-class native feel. The Settings
+       screen swaps `--app-font` (System / Rounded / Mono / Serif); the value
+       here is the default until appearance settings hydrate. */
+    font-family: var(
+      --app-font,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "SF Pro Text",
+      "Segoe UI",
+      sans-serif
+    );
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1;

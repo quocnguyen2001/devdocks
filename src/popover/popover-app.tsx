@@ -9,14 +9,17 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Play, Plus, Power, Search } from "lucide-react";
+import { Plus, Power, Search } from "lucide-react";
 import { listWorkspaces } from "@/lib/workspace-ipc";
 import { filterByQuery, sortRecentFirst } from "@/popover/quick-launch";
 import { cn } from "@/lib/utils";
 import type { Workspace } from "@/types/workspace";
 
-/** Menu-bar quick-actions popover: search + recent-first quick-launch, keyboard
- *  driven, auto-hides on focus loss. Reuses the existing launch engine. */
+/** Columns in the workspace grid; also the ↑/↓ keyboard step. */
+const GRID_COLS = 2;
+
+/** Menu-bar quick-actions popover: search + a recent-first quick-launch grid,
+ *  keyboard driven, auto-hides on focus loss. Reuses the existing launch engine. */
 export function PopoverApp() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [query, setQuery] = useState("");
@@ -91,13 +94,21 @@ export function PopoverApp() {
     hide();
   }, []);
 
+  // Two-column grid navigation: ←/→ move by one, ↑/↓ move by a row (GRID_COLS).
+  const last = visible.length - 1;
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowRight") {
       e.preventDefault();
-      setSelected((s) => Math.min(s + 1, visible.length - 1));
-    } else if (e.key === "ArrowUp") {
+      setSelected((s) => Math.min(s + 1, last));
+    } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       setSelected((s) => Math.max(s - 1, 0));
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelected((s) => Math.min(s + GRID_COLS, last));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelected((s) => Math.max(s - GRID_COLS, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
       const ws = visible[selected];
@@ -125,58 +136,62 @@ export function PopoverApp() {
         />
       </div>
 
-      <div className="flex-1 overflow-auto p-1.5">
+      <div className="flex-1 overflow-auto p-2">
         {visible.length === 0 ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
+          <p className="p-6 text-center text-xs text-muted-foreground">
             {workspaces.length === 0 ? "No workspaces yet." : "No matches."}
           </p>
         ) : (
-          <ul role="listbox" aria-label="Workspaces">
-            {visible.map((ws, i) => (
-              <li key={ws.id}>
+          <div
+            role="listbox"
+            aria-label="Workspaces"
+            className="grid grid-cols-2 gap-1.5"
+          >
+            {visible.map((ws, i) => {
+              const isSelected = i === selected;
+              const accent = ws.accentColor || undefined;
+              return (
                 <button
+                  key={ws.id}
                   type="button"
                   role="option"
-                  aria-selected={i === selected}
+                  aria-selected={isSelected}
                   ref={
-                    i === selected
+                    isSelected
                       ? (el) => el?.scrollIntoView({ block: "nearest" })
                       : undefined
                   }
                   onMouseEnter={() => setSelected(i)}
                   onClick={() => void launch(ws)}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors",
-                    i === selected
-                      ? "bg-brand text-brand-foreground"
-                      : "hover:bg-accent",
+                    "flex flex-col gap-1.5 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none",
+                    isSelected
+                      ? "border-brand bg-brand-muted"
+                      : "border-border bg-surface/40 hover:bg-accent",
                   )}
                 >
-                  <Play
+                  <span
                     className={cn(
-                      "h-3.5 w-3.5 shrink-0",
-                      i !== selected && "text-muted-foreground",
+                      "flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold text-white",
+                      !accent && "bg-brand",
                     )}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="text-card-title block truncate">
+                    style={accent ? { backgroundColor: accent } : undefined}
+                    aria-hidden
+                  >
+                    {ws.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[11px] font-medium leading-tight">
                       {ws.name}
                     </span>
-                    <span
-                      className={cn(
-                        "text-mono block truncate",
-                        i === selected
-                          ? "text-brand-foreground/80"
-                          : "text-muted-foreground",
-                      )}
-                    >
+                    <span className="block truncate text-[10px] leading-tight text-muted-foreground">
                       {ws.path}
                     </span>
                   </span>
                 </button>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         )}
       </div>
 
