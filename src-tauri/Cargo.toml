@@ -25,12 +25,15 @@ tauri-plugin-opener = "2"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+# Enumerate installed system fonts for the Settings font picker.
+font-kit = "0.14"
 thiserror = "2"
 tokio = { version = "1", features = ["process", "time", "rt", "macros", "sync"] }
 shellexpand = "3"

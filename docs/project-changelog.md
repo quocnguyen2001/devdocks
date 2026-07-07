@@ -35,6 +35,21 @@
   - **In-app version badge** — the app version is defined once (from
     `package.json`, injected at build time) and stamped in the sidebar footer;
     `package.json`, `tauri.conf.json`, and `Cargo.toml` bumped to `0.2.0`.
+  - **Settings screen** — a new sidebar section for app preferences: theme
+    (light / dark / system), **font** — pick **any font installed on the Mac**
+    (enumerated by a Rust `list_system_fonts` command; System = SF Pro; no
+    bundled webfonts), **interface size** (Compact / Default / Comfortable, a
+    whole-UI zoom), and **Launch at login** (a macOS LaunchAgent via
+    `tauri-plugin-autostart`). Preferences persist via the settings store; an
+    About block shows the version and a reset-appearance action.
+  - **Skeleton loading** — a shared `Skeleton` primitive; the lazy workspace
+    editor now shows a form-shaped skeleton instead of a "Loading…" line, and the
+    dashboard cards reuse the same primitive.
+  - **Sidebar nav** — the active item is a clean filled pill (the blue left
+    edge-border was removed).
+  - **Menu-bar popover as a grid** — the tray quick-launcher moves from a list
+    to a compact two-column grid of accent-avatar tiles with smaller type;
+    arrow keys navigate in 2-D (←/→ and ↑/↓), Enter launches, Esc closes.
 
 - **Linear-style redesign (UI-only)** — the whole app moves to a Linear.app-
   inspired visual language: a cool-neutral OKLCH surface ladder (dark-primary,

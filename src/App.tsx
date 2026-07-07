@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { AppShell } from "@/components/app-shell";
+import { AppShell, type NavSection } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/toast";
 import { Dashboard } from "@/features/dashboard/dashboard";
+import { WorkspaceEditorSkeleton } from "@/features/workspace-config/workspace-editor-skeleton";
+import { SettingsScreen } from "@/features/settings/settings-screen";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { runBeforeCloseHooks } from "@/lib/launch-ipc";
 import { useLaunchStore } from "@/store/launch-store";
@@ -20,7 +22,8 @@ const WorkspaceEditor = lazy(() =>
 type View =
   | { mode: "list" }
   | { mode: "new" }
-  | { mode: "edit"; ws: Workspace };
+  | { mode: "edit"; ws: Workspace }
+  | { mode: "settings" };
 
 function App() {
   const [view, setView] = useState<View>({ mode: "list" });
@@ -30,6 +33,9 @@ function App() {
     onNew: () => setView((v) => (v.mode === "list" ? { mode: "new" } : v)),
     onEscape: () => setView((v) => (v.mode === "list" ? v : { mode: "list" })),
   });
+
+  const navigate = (section: NavSection) =>
+    setView(section === "settings" ? { mode: "settings" } : { mode: "list" });
 
   // Best-effort before-close hooks for the last-launched workspace on a graceful
   // window close (not guaranteed on force-quit/crash/logout — review M1).
@@ -73,16 +79,18 @@ function App() {
   const backToList = () => setView({ mode: "list" });
 
   return (
-    <AppShell>
+    <AppShell
+      active={view.mode === "settings" ? "settings" : "workspaces"}
+      onNavigate={navigate}
+    >
       {view.mode === "list" && (
         <Dashboard
           onNew={() => setView({ mode: "new" })}
           onEdit={(ws) => setView({ mode: "edit", ws })}
         />
       )}
-      <Suspense
-        fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}
-      >
+      {view.mode === "settings" && <SettingsScreen />}
+      <Suspense fallback={<WorkspaceEditorSkeleton />}>
         {view.mode === "new" && (
           <WorkspaceEditor onSave={handleSave} onCancel={backToList} />
         )}

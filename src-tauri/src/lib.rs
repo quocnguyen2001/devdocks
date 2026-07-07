@@ -159,6 +159,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        // Launch-at-login: a macOS LaunchAgent, toggled from Settings. No launch
+        // args are passed so a login start behaves like a normal launch.
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None::<Vec<&str>>,
+        ))
         // App-level settings only (theme, window, recents index) — NOT workspace
         // configs, which are JSON files owned by the storage layer.
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -185,6 +191,7 @@ pub fn run() {
         run_before_close_hooks,
         open_main_window,
         quit_app,
+        commands::fonts::list_system_fonts,
         commands::workspace::dev_seed_workspace
     ]);
     #[cfg(not(debug_assertions))]
@@ -199,7 +206,8 @@ pub fn run() {
         retry_step,
         run_before_close_hooks,
         open_main_window,
-        quit_app
+        quit_app,
+        commands::fonts::list_system_fonts
     ]);
 
     builder
