@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -16,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { CollapsibleSection } from "@/components/collapsible-section";
@@ -24,6 +24,8 @@ import { ColorSwatchInput } from "@/components/color-swatch-input";
 import { FolderInput } from "@/components/folder-input";
 import { AppPicker } from "@/components/app-picker";
 import { useDetectedTools } from "@/hooks/use-detected-tools";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { DURATION, EASE_OUT } from "@/lib/motion";
 import {
   AI_TOOL_OPTIONS,
   APP_OPTIONS,
@@ -120,14 +122,16 @@ export function WorkspaceEditor({
     keyName: "fieldId",
   });
 
+  const reduced = useReducedMotion();
   const aiTools = watch("aiTools");
   const applications = watch("applications");
   const path = watch("path");
   const accentColor = watch("accentColor") ?? "";
+  const ideApp = watch("ideApp") ?? "";
 
   // Collapsed-section summaries: let a folded section report its state at a
   // glance (Linear-style) instead of forcing an expand to check.
-  const ideLabel = IDE_OPTIONS.find((o) => o.id === watch("ideApp"))?.label;
+  const ideLabel = IDE_OPTIONS.find((o) => o.id === ideApp)?.label;
   const hooksVal = watch("hooks");
   const hookCount =
     (hooksVal?.beforeLaunch.length ?? 0) +
@@ -176,9 +180,6 @@ export function WorkspaceEditor({
   );
 
   const requestCancel = () => (isDirty ? setDiscardOpen(true) : onCancel());
-
-  const ideAvail = (id: string) =>
-    availability[id]?.available === false ? " (not found)" : "";
 
   return (
     <>
@@ -298,15 +299,19 @@ export function WorkspaceEditor({
               onOpenChange={() => toggle("ide")}
               hasError={sectionHasError("ide")}
             >
-              <Select id="ide" {...register("ideApp")}>
-                <option value="">None</option>
-                {IDE_OPTIONS.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.label}
-                    {ideAvail(o.id)}
-                  </option>
-                ))}
-              </Select>
+              {/* Single-select: an empty selection = "None". Clicking the
+                  active editor again clears it back to None. */}
+              <AppPicker
+                compact
+                options={IDE_OPTIONS}
+                selected={ideApp ? [ideApp] : []}
+                onToggle={(id) =>
+                  setValue("ideApp", ideApp === id ? "" : id, {
+                    shouldDirty: true,
+                  })
+                }
+                availability={availability}
+              />
             </CollapsibleSection>
 
             <CollapsibleSection
@@ -337,56 +342,80 @@ export function WorkspaceEditor({
                     <Plus className="h-4 w-4" /> Add
                   </Button>
                 </div>
-                {terminals.fields.map((f, i) => {
-                  const isWarp = watch(`terminals.${i}.app`) === "warp";
-                  return (
-                    <div
-                      key={f.fieldId}
-                      className="space-y-2 rounded-md border border-border p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <Select {...register(`terminals.${i}.app`)}>
-                            {TERMINAL_OPTIONS.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </Select>
+                <AnimatePresence initial={false}>
+                  {terminals.fields.map((f, i) => {
+                    const isWarp = watch(`terminals.${i}.app`) === "warp";
+                    return (
+                      <motion.div
+                        key={f.fieldId}
+                        layout
+                        initial={reduced ? false : { opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={
+                          reduced
+                            ? { opacity: 0 }
+                            : { opacity: 0, height: 0 }
+                        }
+                        transition={{
+                          duration: reduced ? 0 : DURATION.base,
+                          ease: EASE_OUT,
+                        }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-2 rounded-md border border-border p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <AppPicker
+                                compact
+                                options={TERMINAL_OPTIONS}
+                                selected={[watch(`terminals.${i}.app`)]}
+                                onToggle={(id) =>
+                                  setValue(`terminals.${i}.app`, id, {
+                                    shouldDirty: true,
+                                  })
+                                }
+                                availability={availability}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => terminals.remove(i)}
+                              aria-label="Remove terminal"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <Input
+                              {...register(`terminals.${i}.cwd`)}
+                              placeholder="cwd (e.g. . or backend)"
+                            />
+                            <Input
+                              className={cn(
+                                "col-span-2",
+                                isWarp && "opacity-60",
+                              )}
+                              {...register(`terminals.${i}.command`)}
+                              placeholder="command (e.g. npm run dev)"
+                              // readOnly (not disabled): RHF excludes disabled fields from
+                              // submission, which would make command `undefined` and fail
+                              // Zod validation, silently blocking save for Warp terminals.
+                              readOnly={isWarp}
+                            />
+                          </div>
+                          {isWarp && (
+                            <p className="text-xs text-muted-foreground">
+                              Warp is launch-only — it can't auto-run a
+                              cwd/command.
+                            </p>
+                          )}
                         </div>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => terminals.remove(i)}
-                          aria-label="Remove terminal"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Input
-                          {...register(`terminals.${i}.cwd`)}
-                          placeholder="cwd (e.g. . or backend)"
-                        />
-                        <Input
-                          className={cn("col-span-2", isWarp && "opacity-60")}
-                          {...register(`terminals.${i}.command`)}
-                          placeholder="command (e.g. npm run dev)"
-                          // readOnly (not disabled): RHF excludes disabled fields from
-                          // submission, which would make command `undefined` and fail
-                          // Zod validation, silently blocking save for Warp terminals.
-                          readOnly={isWarp}
-                        />
-                      </div>
-                      {isWarp && (
-                        <p className="text-xs text-muted-foreground">
-                          Warp is launch-only — it can't auto-run a cwd/command.
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             </CollapsibleSection>
 
@@ -447,31 +476,44 @@ export function WorkspaceEditor({
                     <Plus className="h-4 w-4" /> Add
                   </Button>
                 </div>
-                {urls.fields.map((f, i) => (
-                  <div key={f.fieldId} className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        {...register(`browserUrls.${i}.url`)}
-                        placeholder="https://example.com"
-                        aria-invalid={!!errors.browserUrls?.[i]?.url}
-                      />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => urls.remove(i)}
-                        aria-label="Remove URL"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {errors.browserUrls?.[i]?.url && (
-                      <p className="text-xs text-destructive">
-                        {errors.browserUrls[i]?.url?.message}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                <AnimatePresence initial={false}>
+                  {urls.fields.map((f, i) => (
+                    <motion.div
+                      key={f.fieldId}
+                      layout
+                      initial={reduced ? false : { opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                      transition={{
+                        duration: reduced ? 0 : DURATION.base,
+                        ease: EASE_OUT,
+                      }}
+                      className="space-y-1 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Input
+                          {...register(`browserUrls.${i}.url`)}
+                          placeholder="https://example.com"
+                          aria-invalid={!!errors.browserUrls?.[i]?.url}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => urls.remove(i)}
+                          aria-label="Remove URL"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {errors.browserUrls?.[i]?.url && (
+                        <p className="text-xs text-destructive">
+                          {errors.browserUrls[i]?.url?.message}
+                        </p>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </CollapsibleSection>
 
