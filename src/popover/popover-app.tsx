@@ -165,7 +165,7 @@ export function PopoverApp() {
   // `AlreadyRunning` rejection just means an already-visible run keeps going).
   const runWorkflow = useCallback(async (wf: Workflow) => {
     try {
-      await invoke("run_workflow", { workflow_id: wf.id });
+      await invoke("run_workflow", { workflowId: wf.id });
     } catch {
       /* observed/surfaced in the main window's run store */
     }

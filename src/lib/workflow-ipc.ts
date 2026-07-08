@@ -4,8 +4,9 @@ import type { LaunchProgress } from "@/types/launch";
 import type { Workflow, WorkflowSummary } from "@/types/workflow";
 
 // Workflow engine lives entirely in Rust (owns persistence + validation); the
-// frontend invokes and subscribes to progress/done events. Multi-word command
-// args use snake_case keys to match the Rust parameter names.
+// frontend invokes and subscribes to progress/done events. Tauri v2 exposes
+// command args in camelCase on the JS side even though the Rust params are
+// snake_case (e.g. run_workflow's `workflow_id` -> `workflowId`).
 
 export function listWorkflows(): Promise<Workflow[]> {
   return invoke<Workflow[]>("list_workflows");
@@ -29,7 +30,7 @@ export function duplicateWorkflow(id: string): Promise<Workflow> {
 
 /** Resolves to the run_id immediately; the run continues on the backend. */
 export function runWorkflow(workflowId: string): Promise<string> {
-  return invoke<string>("run_workflow", { workflow_id: workflowId });
+  return invoke<string>("run_workflow", { workflowId });
 }
 
 /** Cancels whatever workflow run currently holds the active slot (idempotent). */

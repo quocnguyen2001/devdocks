@@ -224,7 +224,7 @@ export function WorkspaceEditor({
 
         {/* The single scroll region. `min-h-0` lets this flex child shrink below
             its content so overflow scrolls here, not on the app shell. */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
           <div className="mx-auto max-w-5xl space-y-3 px-6 py-6">
             <CollapsibleSection
               title="General"

@@ -4,8 +4,8 @@ import type { Detected, LaunchProgress, LaunchSummary } from "@/types/launch";
 import type { Workspace } from "@/types/workspace";
 
 // Launch engine lives entirely in Rust; the frontend invokes and subscribes to
-// progress events. Multi-word command args use snake_case keys to match the Rust
-// parameter names regardless of Tauri's arg-casing behavior.
+// progress events. Tauri v2 exposes command args in camelCase on the JS side
+// even though the Rust params are snake_case (e.g. `run_id` -> `runId`).
 
 export function detectTools(ids: string[]): Promise<Detected[]> {
   return invoke<Detected[]>("detect_tools", { ids });
@@ -16,11 +16,11 @@ export function launchWorkspace(workspace: Workspace): Promise<LaunchSummary> {
 }
 
 export function retryStep(runId: string, stepId: string): Promise<string> {
-  return invoke<string>("retry_step", { run_id: runId, step_id: stepId });
+  return invoke<string>("retry_step", { runId, stepId });
 }
 
 export function runBeforeCloseHooks(workspaceId: string): Promise<void> {
-  return invoke<void>("run_before_close_hooks", { workspace_id: workspaceId });
+  return invoke<void>("run_before_close_hooks", { workspaceId });
 }
 
 /** Dev-only seed command (compiled into debug builds only). */

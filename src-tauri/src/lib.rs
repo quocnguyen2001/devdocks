@@ -196,6 +196,7 @@ pub fn run() {
         run_workflow,
         cancel_active_run,
         commands::fonts::list_system_fonts,
+        commands::apps::list_installed_apps,
         commands::workspace::dev_seed_workspace
     ]);
     #[cfg(not(debug_assertions))]
@@ -218,7 +219,8 @@ pub fn run() {
         duplicate_workflow,
         run_workflow,
         cancel_active_run,
-        commands::fonts::list_system_fonts
+        commands::fonts::list_system_fonts,
+        commands::apps::list_installed_apps
     ]);
 
     builder

@@ -24,6 +24,7 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { StepForm, WorkflowForm } from "@/features/workflows/form-model";
+import { useInstalledAppsStore } from "@/store/installed-apps-store";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,7 @@ export function StepCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: sortableId });
   const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const installedApps = useInstalledAppsStore((s) => s.apps);
 
   const step = watch(`steps.${index}`);
   const kind = step.kind;
@@ -222,12 +224,21 @@ export function StepCard({
           {kind === "openApp" && (
             <div className="space-y-1.5">
               <Label htmlFor={`step-${sortableId}-app`}>App name</Label>
+              {/* Pick-or-type: the datalist lists apps installed on this machine,
+                  but a custom name is still accepted (validated on run). */}
               <Input
                 id={`step-${sortableId}-app`}
+                list={`step-${sortableId}-app-list`}
                 {...register(`steps.${index}.appName`)}
                 placeholder="Slack"
+                autoComplete="off"
                 aria-invalid={!!fieldError("appName")}
               />
+              <datalist id={`step-${sortableId}-app-list`}>
+                {installedApps.map((app) => (
+                  <option key={app.path} value={app.name} />
+                ))}
+              </datalist>
               {fieldError("appName") && (
                 <p className="text-xs text-destructive">
                   {fieldError("appName")}

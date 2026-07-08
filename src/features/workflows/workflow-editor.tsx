@@ -37,6 +37,7 @@ import {
 } from "@/features/workflows/form-model";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { DURATION, EASE_OUT } from "@/lib/motion";
+import { useInstalledAppsStore } from "@/store/installed-apps-store";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import type { Workflow } from "@/types/workflow";
 
@@ -48,9 +49,11 @@ interface WorkflowEditorProps {
 
 export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProps) {
   const fetchWorkspaces = useWorkspaceStore((s) => s.fetch);
+  const fetchInstalledApps = useInstalledAppsStore((s) => s.fetch);
   useEffect(() => {
     void fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    void fetchInstalledApps();
+  }, [fetchWorkspaces, fetchInstalledApps]);
 
   const {
     register,
@@ -173,7 +176,7 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
           <div className="mx-auto max-w-5xl space-y-3 px-6 py-6">
             <CollapsibleSection
               title="General"
