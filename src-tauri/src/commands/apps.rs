@@ -2,7 +2,9 @@
 //! Best-effort scan of the standard macOS Applications directories; the display
 //! name (the `.app` file stem) is exactly what `open -a "<name>"` expects.
 
-use std::path::PathBuf;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use serde::Serialize;
 
@@ -70,6 +72,89 @@ pub fn list_installed_apps() -> Vec<InstalledApp> {
     sort_and_dedupe(apps)
 }
 
+/// In-memory cache of extracted app icons (base64 PNG data URIs), keyed by the
+/// `.app` bundle path. Populated lazily by `app_icon`; a cached `None` records
+/// that an icon couldn't be produced, so a failing app isn't re-extracted on
+/// every render.
+pub type IconCache = Mutex<HashMap<String, Option<String>>>;
+
+/// Guard for `app_icon`: only enumerated `.app` bundles under the standard
+/// Applications directories are eligible. Keeps the command an icon lookup for
+/// listed apps, not a general-purpose file thumbnail oracle.
+fn is_allowed_app_path(path: &Path) -> bool {
+    use std::path::Component;
+    if path.extension().and_then(|e| e.to_str()) != Some("app") {
+        return false;
+    }
+    // Reject `..` so the component-wise prefix check can't be tricked into
+    // escaping an Applications dir (icons only, but keep the guard honest).
+    if path.components().any(|c| c == Component::ParentDir) {
+        return false;
+    }
+    app_dirs().iter().any(|dir| path.starts_with(dir))
+}
+
+/// Extract an app bundle's icon as a base64 PNG data URI. Best-effort: any
+/// failure yields `None`. The AppKit icon + bitmap selectors used here are not
+/// `MainThreadOnly` in objc2, so this is safe to run off the main thread.
+#[cfg(target_os = "macos")]
+fn extract_icon_data_uri(path: &str) -> Option<String> {
+    use base64::Engine as _;
+    use objc2::AllocAnyThread;
+    use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSWorkspace};
+    use objc2_foundation::{NSData, NSDictionary, NSString};
+
+    objc2::rc::autoreleasepool(|_| {
+        // SAFETY: standard AppKit icon-extraction message sends over valid
+        // objc2 objects; none of these selectors require a main thread.
+        let png: objc2::rc::Retained<NSData> = unsafe {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let ns_path = NSString::from_str(path);
+            let image = workspace.iconForFile(&ns_path);
+            let tiff = image.TIFFRepresentation()?;
+            let rep = NSBitmapImageRep::initWithData(NSBitmapImageRep::alloc(), &tiff)?;
+            let props = NSDictionary::new();
+            rep.representationUsingType_properties(NSBitmapImageFileType::PNG, &props)?
+        };
+        let bytes = png.to_vec();
+        if bytes.is_empty() {
+            return None;
+        }
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        Some(format!("data:image/png;base64,{b64}"))
+    })
+}
+
+#[cfg(not(target_os = "macos"))]
+fn extract_icon_data_uri(_path: &str) -> Option<String> {
+    None
+}
+
+/// Return an installed app's icon as a base64 PNG data URI, or `None` if it
+/// can't be produced. Lazy + cached: the "Open app" picker requests icons per
+/// row and results (hits and misses) are memoized so re-renders don't re-extract.
+///
+/// `#[tauri::command(async)]` on purpose: Tauri runs plain sync commands on the
+/// main thread, but the picker fans out one call per row, so this runs the
+/// blocking AppKit extraction on a worker thread instead of stalling the UI. The
+/// selectors used are not `MainThreadOnly`, so off-main execution is sound.
+#[tauri::command(async)]
+pub fn app_icon(cache: tauri::State<'_, IconCache>, path: String) -> Option<String> {
+    if !is_allowed_app_path(Path::new(&path)) {
+        return None;
+    }
+    if let Ok(map) = cache.lock() {
+        if let Some(hit) = map.get(&path) {
+            return hit.clone();
+        }
+    }
+    let icon = extract_icon_data_uri(&path);
+    if let Ok(mut map) = cache.lock() {
+        map.insert(path, icon.clone());
+    }
+    icon
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,5 +187,25 @@ mod tests {
         // Exercises the filesystem path on the host; must not panic even when
         // some Applications dirs are missing/unreadable.
         let _ = list_installed_apps();
+    }
+
+    #[test]
+    fn icon_path_guard_accepts_only_app_bundles_in_app_dirs() {
+        // Eligible: `.app` bundles directly under (or nested within) an apps dir.
+        assert!(is_allowed_app_path(Path::new("/Applications/Slack.app")));
+        assert!(is_allowed_app_path(Path::new(
+            "/Applications/Utilities/Terminal.app"
+        )));
+        assert!(is_allowed_app_path(Path::new(
+            "/System/Applications/Music.app"
+        )));
+        // Rejected: non-`.app` files, `.app` paths outside the apps dirs, and
+        // `..` traversal that would otherwise satisfy the prefix check.
+        assert!(!is_allowed_app_path(Path::new("/etc/passwd")));
+        assert!(!is_allowed_app_path(Path::new("/Applications/Slack.txt")));
+        assert!(!is_allowed_app_path(Path::new("/tmp/Evil.app")));
+        assert!(!is_allowed_app_path(Path::new(
+            "/Applications/../etc/sneaky.app"
+        )));
     }
 }

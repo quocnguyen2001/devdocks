@@ -2,6 +2,24 @@
 
 ## v0.2.0 — unreleased (Menu Bar + Brand Refresh)
 
+- **Workflow editor & settings fixes (UI + one native command)** — a follow-up
+  polish pass addressing direct feedback on the workflows editor and Settings:
+  - **Consistent Settings width** — the Settings screen now shares the `max-w-4xl`
+    content measure of the Workspaces and Workflows lists instead of the narrower
+    `max-w-2xl` it used before.
+  - **Fixed step drag-and-drop** — dragging a step no longer clips/hides the card
+    mid-drag (the row's `overflow-hidden` was cutting off the drag transform). A
+    `DragOverlay` clone now carries the dragged card, an 8px pointer activation
+    distance stops accidental drags, and only **collapsed** cards are draggable
+    (an expanded card's grip is disabled) — reordering is smooth again.
+  - **"Open app" is now a searchable picker** — the plain app-name field is
+    replaced by a popover listing installed apps with their **real macOS icons**
+    and a search box; a custom (non-installed) name can still be typed. Icons are
+    extracted on demand by a new `app_icon` Tauri command (NSWorkspace → PNG →
+    base64, cached, run off the UI thread) with a monogram fallback.
+  - **Roomier form fields** — label→control spacing bumped from 6px to 8px across
+    the workspace and workflow editors.
+
 - **Workflows (sequential macro automation)** — a new top-level feature: build an
   ordered, drag + keyboard-reorderable list of steps DevDock runs one after
   another. A step is one of four kinds — `launchWorkspace` (run an existing

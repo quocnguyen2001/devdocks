@@ -40,6 +40,12 @@ tokio-util = "0.7"
 shellexpand = "3"
 
 # macOS window vibrancy (NSVisualEffectView). Applied at setup, guarded + logged.
+# objc2* + base64 back the NSWorkspace app-icon extraction in commands/apps.rs.
 [target.'cfg(target_os = "macos")'.dependencies]
 window-vibrancy = "0.6"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSWorkspace", "NSImage", "NSBitmapImageRep"] }
+objc2-foundation = { version = "0.3", features = ["NSString", "NSData", "NSDictionary"] }
+# Encode extracted app icons as base64 PNG data URIs for the "Open app" picker.
+base64 = "0.22"
 

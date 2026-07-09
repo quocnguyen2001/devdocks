@@ -31,8 +31,9 @@ interface AppMonogramProps {
 }
 
 /** Colored rounded tile with an app's initials — the fallback when no real logo
- * is bundled, or when the bundled `<img>` fails to load. */
-function AppMonogram({
+ * is bundled, or when the bundled `<img>` fails to load. Also reused by the
+ * "Open app" picker (`AppSelect`) for apps whose real icon isn't available. */
+export function AppMonogram({
   label,
   brandColor = "#6b7280",
   className,

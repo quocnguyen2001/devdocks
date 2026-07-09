@@ -167,6 +167,8 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         // Single-active launch registry + retained plans for retry.
         .manage(RunRegistry::new())
+        // Lazy cache of extracted app icons for the "Open app" picker.
+        .manage(commands::apps::IconCache::default())
         .setup(|app| {
             setup_tray(app.handle())?;
             #[cfg(target_os = "macos")]
@@ -197,6 +199,7 @@ pub fn run() {
         cancel_active_run,
         commands::fonts::list_system_fonts,
         commands::apps::list_installed_apps,
+        commands::apps::app_icon,
         commands::workspace::dev_seed_workspace
     ]);
     #[cfg(not(debug_assertions))]
@@ -220,7 +223,8 @@ pub fn run() {
         run_workflow,
         cancel_active_run,
         commands::fonts::list_system_fonts,
-        commands::apps::list_installed_apps
+        commands::apps::list_installed_apps,
+        commands::apps::app_icon
     ]);
 
     builder

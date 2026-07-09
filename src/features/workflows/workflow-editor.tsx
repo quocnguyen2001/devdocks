@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
@@ -24,7 +25,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { StepCard } from "@/features/workflows/step-card";
+import { StepCard, StepCardOverlay } from "@/features/workflows/step-card";
 import { StepTypePicker } from "@/features/workflows/step-type-picker";
 import {
   fromWorkflow,
@@ -92,15 +93,25 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
 
   const [discardOpen, setDiscardOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [appPickerOpen, setAppPickerOpen] = useState(false);
+  // Id of the card currently being dragged — drives the DragOverlay clone and
+  // suppresses per-item clipping during a drag (issue #2).
+  const [activeId, setActiveId] = useState<string | null>(null);
   const reduced = useReducedMotion();
   const accentColor = watch("accentColor") ?? "";
+  const activeIndex = activeId
+    ? fields.findIndex((f) => f.fieldId === activeId)
+    : -1;
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // Require 8px of travel before a drag starts, so a click/tap on the grip
+    // (or a scroll) no longer fires a spurious drag (issue #2).
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveId(null);
     if (over && active.id !== over.id) {
       const from = fields.findIndex((f) => f.fieldId === active.id);
       const to = fields.findIndex((f) => f.fieldId === over.id);
@@ -129,14 +140,14 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
       // Yield Escape to an open overlay: the step-type menu closes itself and
       // the discard dialog (Radix) handles its own Escape. Only treat Escape
       // as editor-cancel when nothing is layered on top.
-      if (pickerOpen || discardOpen) return;
+      if (pickerOpen || discardOpen || appPickerOpen) return;
       e.stopPropagation();
       requestCancel();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- requestCancel reads latest isDirty via closure each render
-  }, [isDirty, pickerOpen, discardOpen]);
+  }, [isDirty, pickerOpen, discardOpen, appPickerOpen]);
 
   const stepsErrorMessage =
     typeof errors.steps?.message === "string" ? errors.steps.message : undefined;
@@ -187,7 +198,7 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
               hasError={!!errors.name}
             >
               <div className="space-y-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="wf-name">Name</Label>
                   <Input
                     id="wf-name"
@@ -202,11 +213,11 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
                     </p>
                   )}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="wf-description">Description</Label>
                   <Textarea id="wf-description" {...register("description")} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="wf-accent">Accent color</Label>
                   <ColorSwatchInput
                     id="wf-accent"
@@ -230,7 +241,9 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={({ active }) => setActiveId(String(active.id))}
                 onDragEnd={handleDragEnd}
+                onDragCancel={() => setActiveId(null)}
               >
                 <SortableContext
                   items={fields.map((f) => f.fieldId)}
@@ -238,9 +251,16 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
                 >
                   <AnimatePresence initial={false}>
                     {fields.map((field, index) => (
+                      // No Motion `layout` here: it animates size via scale
+                      // transforms (blurs card text) and position via translate,
+                      // and — unlike enter/exit — is NOT suppressed by
+                      // AnimatePresence `initial={false}`. The async store fetches
+                      // and the seeding effect re-render on editor open, and an
+                      // interrupted layout animation left a stuck, blurred,
+                      // overlapping frame. Reorder is already handled by dnd-kit's
+                      // own transform; enter/exit reveal is kept below.
                       <motion.div
                         key={field.fieldId}
-                        layout
                         initial={reduced ? false : { opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
@@ -248,7 +268,11 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
                           duration: reduced ? 0 : DURATION.base,
                           ease: EASE_OUT,
                         }}
-                        className="overflow-hidden pb-2"
+                        // Clip only for the height reveal; drop it during a drag
+                        // so a translating card is never cut off (issue #2).
+                        className={
+                          activeId === null ? "overflow-hidden pb-2" : "pb-2"
+                        }
                       >
                         <StepCard
                           sortableId={field.fieldId}
@@ -259,6 +283,7 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
                           errors={errors.steps}
                           open={openSteps[field.fieldId] ?? true}
                           onOpenChange={() => toggleStep(field.fieldId)}
+                          onAppPickerOpenChange={setAppPickerOpen}
                           onRemove={() => remove(index)}
                           onDuplicate={() => {
                             const dup = {
@@ -272,6 +297,14 @@ export function WorkflowEditor({ initial, onSave, onCancel }: WorkflowEditorProp
                     ))}
                   </AnimatePresence>
                 </SortableContext>
+                <DragOverlay dropAnimation={reduced ? null : undefined}>
+                  {activeIndex >= 0 ? (
+                    <StepCardOverlay
+                      index={activeIndex}
+                      step={watch(`steps.${activeIndex}`)}
+                    />
+                  ) : null}
+                </DragOverlay>
               </DndContext>
 
               <StepTypePicker onPick={addStep} onOpenChange={setPickerOpen} />

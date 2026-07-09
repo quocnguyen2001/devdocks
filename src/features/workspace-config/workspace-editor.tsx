@@ -235,7 +235,7 @@ export function WorkspaceEditor({
               hasError={sectionHasError("general")}
             >
               <div className="space-y-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
@@ -250,7 +250,7 @@ export function WorkspaceEditor({
                     </p>
                   )}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Path</Label>
                   <FolderInput
                     value={path}
@@ -263,12 +263,12 @@ export function WorkspaceEditor({
                     </p>
                   )}
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea id="description" {...register("description")} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label htmlFor="tags">Tags (comma-separated)</Label>
                     <Input
                       id="tags"
@@ -276,7 +276,7 @@ export function WorkspaceEditor({
                       placeholder="php, api"
                     />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label htmlFor="accent">Accent color</Label>
                     <ColorSwatchInput
                       id="accent"
@@ -346,9 +346,12 @@ export function WorkspaceEditor({
                   {terminals.fields.map((f, i) => {
                     const isWarp = watch(`terminals.${i}.app`) === "warp";
                     return (
+                      // No Motion `layout`: it animates size via scale (blurs
+                      // content) and isn't suppressed by `initial={false}`, so a
+                      // re-render (watch/async) mid-animation can leave a stuck,
+                      // blurred, overlapping frame. Enter/exit reveal is enough.
                       <motion.div
                         key={f.fieldId}
-                        layout
                         initial={reduced ? false : { opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={
@@ -478,9 +481,10 @@ export function WorkspaceEditor({
                 </div>
                 <AnimatePresence initial={false}>
                   {urls.fields.map((f, i) => (
+                    // No Motion `layout` — see the terminals list above for why
+                    // (scale-blur + interrupted-animation corruption on re-render).
                     <motion.div
                       key={f.fieldId}
-                      layout
                       initial={reduced ? false : { opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
