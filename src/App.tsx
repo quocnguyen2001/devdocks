@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { AppShell, type NavSection } from "@/components/app-shell";
+import { LazyBoundary } from "@/components/lazy-boundary";
 import { Toaster } from "@/components/ui/toast";
 import { Dashboard } from "@/features/dashboard/dashboard";
 import { WorkspaceEditorSkeleton } from "@/features/workspace-config/workspace-editor-skeleton";
@@ -146,7 +147,7 @@ function App() {
           onEdit={(wf) => setView({ mode: "workflow-edit", wf })}
         />
       )}
-      <Suspense fallback={<WorkspaceEditorSkeleton />}>
+      <LazyBoundary fallback={<WorkspaceEditorSkeleton />}>
         {view.mode === "new" && (
           <WorkspaceEditor onSave={handleSave} onCancel={backToList} />
         )}
@@ -157,8 +158,8 @@ function App() {
             onCancel={backToList}
           />
         )}
-      </Suspense>
-      <Suspense fallback={<WorkflowEditorSkeleton />}>
+      </LazyBoundary>
+      <LazyBoundary fallback={<WorkflowEditorSkeleton />}>
         {view.mode === "workflow-new" && (
           <WorkflowEditor onSave={handleSaveWorkflow} onCancel={backToWorkflows} />
         )}
@@ -169,7 +170,7 @@ function App() {
             onCancel={backToWorkflows}
           />
         )}
-      </Suspense>
+      </LazyBoundary>
       <Toaster />
     </AppShell>
   );
